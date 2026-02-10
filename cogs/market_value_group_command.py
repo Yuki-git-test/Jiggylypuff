@@ -36,7 +36,8 @@ class Market_Value_Group_Commands(commands.Cog):
         pokemon="Name of the Pokémon (e.g. Pikachu, Charizard)",
     )
     @app_commands.autocomplete(pokemon=pokemon_autocomplete)
-    async def auction_start(
+    @auctioneer_only()  
+    async def market_value_view(
         self,
         interaction: discord.Interaction,
         pokemon: str,
@@ -50,7 +51,7 @@ class Market_Value_Group_Commands(commands.Cog):
             command_func=view_market_value_func,
             pokemon=pokemon,
         )
-
+    market_value_view.extras = {"category": "Staff"}
     # 🎀────────────────────────────────────────────
     #          🌸 /market-value update 🌸
     # 🎀────────────────────────────────────────────
@@ -85,7 +86,7 @@ class Market_Value_Group_Commands(commands.Cog):
             is_pokemon_exclusive=is_pokemon_exclusive,
             image_link=image_link,
         )
-
+    market_value_update.extras = {"category": "Staff"}
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Market_Value_Group_Commands(bot))

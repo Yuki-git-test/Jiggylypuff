@@ -38,3 +38,14 @@ def auctioneer_only():
         return True
 
     return app_commands.check(predicate)
+
+
+# Check if user is staff member
+def is_staff_member(member: discord.Member) -> bool:
+    """
+    Checks if a member has any staff roles.
+    """
+    staff_role_ids = [GRAND_LINE_AUCTION_ROLES.auctioneer, GRAND_LINE_AUCTION_ROLES.moderator]
+    if any(role.id in staff_role_ids for role in member.roles):
+        return True
+    return False

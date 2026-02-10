@@ -40,7 +40,7 @@ class BulkGroupCommand(commands.Cog):
         autobuy="Autobuy price (e.g. '1k', '1.5m')",
         accepted_pokemon="Optional List of accepted Pokémon (comma-separated)",
     )
-    async def auction_start(
+    async def bulk_auction_start(
         self,
         interaction: discord.Interaction,
         pokemon: str,
@@ -60,15 +60,15 @@ class BulkGroupCommand(commands.Cog):
             autobuy=autobuy,
             accepted_pokemon=accepted_pokemon,
         )
-
+    bulk_auction_start.extras = {"category": "Public"}
     # 🎀────────────────────────────────────────────
     #          🌸 /bulk-auction list 🌸
     # 🎀────────────────────────────────────────────
     @bulk_group.command(
-        name="list", description="Ends the active auction in this channel"
+        name="list", description="Shows the list of pokemon in the current bulk auction"
     )
     @auctioneer_only()
-    async def auction_end(self, interaction: discord.Interaction):
+    async def bulk_auction_list(self, interaction: discord.Interaction):
         slash_cmd_name = "bulk-auction list"
 
         await run_command_safe(
@@ -77,7 +77,7 @@ class BulkGroupCommand(commands.Cog):
             slash_cmd_name=slash_cmd_name,
             command_func=bulk_view_func,
         )
-
+    bulk_auction_list.extras = {"category": "Public"}
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(BulkGroupCommand(bot))

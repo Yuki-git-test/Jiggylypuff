@@ -28,7 +28,7 @@ class Accepted_List_Group_Commands(commands.Cog):
     @accepted_list_group.command(
         name="view", description="View accepted list for the current auction"
     )
-    async def auction_start(
+    async def accepted_list_view(
         self,
         interaction: discord.Interaction,
     ):
@@ -41,6 +41,8 @@ class Accepted_List_Group_Commands(commands.Cog):
             command_func=view_accepted_list_func,
         )
 
+    accepted_list_view.extras = {"category": "Public"}
+
     # 🎀────────────────────────────────────────────
     #          🌸 /accepted-list update 🌸
     # 🎀────────────────────────────────────────────
@@ -50,7 +52,7 @@ class Accepted_List_Group_Commands(commands.Cog):
     @app_commands.describe(
         new_accepted_list="New accepted Pokémon list (comma-separated)"
     )
-    async def auction_start(
+    async def accepted_list_update(
         self,
         interaction: discord.Interaction,
         new_accepted_list: str,
@@ -65,13 +67,15 @@ class Accepted_List_Group_Commands(commands.Cog):
             new_accepted_list=new_accepted_list,
         )
 
+    accepted_list_update.extras = {"category": "Staff"}
+
     # 🎀────────────────────────────────────────────
     #          🌸 /accepted-list clear 🌸
     # 🎀────────────────────────────────────────────
     @accepted_list_group.command(
         name="clear", description="Clear accepted list for the current auction"
     )
-    async def auction_start(
+    async def accepted_list_clear(
         self,
         interaction: discord.Interaction,
     ):
@@ -83,6 +87,8 @@ class Accepted_List_Group_Commands(commands.Cog):
             slash_cmd_name=slash_cmd_name,
             command_func=clear_accepted_list_func,
         )
+
+    accepted_list_clear.extras = {"category": "Staff"}
 
 
 async def setup(bot: commands.Bot):

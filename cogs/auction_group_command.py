@@ -61,7 +61,7 @@ class AuctionGroupCommand(commands.Cog):
             autobuy=autobuy,
             accepted_pokemon=accepted_pokemon,
         )
-
+    auction_start.extras = {"category": "Public"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction end 🌸
     # 🎀────────────────────────────────────────────
@@ -78,7 +78,7 @@ class AuctionGroupCommand(commands.Cog):
             slash_cmd_name=slash_cmd_name,
             command_func=end_auction_func,
         )
-
+    auction_end.extras = {"category": "Staff"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction bid 🌸
     # 🎀────────────────────────────────────────────
@@ -96,7 +96,7 @@ class AuctionGroupCommand(commands.Cog):
             command_func=bid_func,
             amount=amount,
         )
-
+    auction_bid.extras = {"category": "Public"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction roll-back 🌸
     # 🎀────────────────────────────────────────────
@@ -125,7 +125,7 @@ class AuctionGroupCommand(commands.Cog):
             member=member,
             amount=amount,
         )
-
+    auction_roll_back.extras = {"category": "Staff"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction update-ends-on 🌸
     # 🎀────────────────────────────────────────────
@@ -154,7 +154,7 @@ class AuctionGroupCommand(commands.Cog):
             action=action,
             duration=duration,
         )
-
+    auction_update_ends_on.extras = {"category": "Staff"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction banner 🌸
     # 🎀────────────────────────────────────────────
@@ -171,7 +171,7 @@ class AuctionGroupCommand(commands.Cog):
             slash_cmd_name=slash_cmd_name,
             command_func=send_auction_house_banner_func,
         )
-
+    auction_banner.extras = {"category": "Staff"}
     # 🎀────────────────────────────────────────────
     #          🌸 /auction info 🌸
     # 🎀────────────────────────────────────────────
@@ -188,7 +188,7 @@ class AuctionGroupCommand(commands.Cog):
             slash_cmd_name=slash_cmd_name,
             command_func=auction_info_func,
         )
-
+    auction_info.extras = {"category": "Public"}
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(AuctionGroupCommand(bot))

@@ -34,7 +34,7 @@ from utils.parser.duration_parser import parse_duration
 from utils.parser.number_parser import parse_compact_number
 from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
-
+from utils.group_commands_func.auction.end import send_auction_house_banner
 from .start import is_being_processed, make_auction_embed
 
 INITIAL_MIN_BID = 100_000
@@ -190,5 +190,6 @@ async def bid_func(
     if is_autobought:
         # Remove from db
         await delete_auction(bot, channel_id=interaction.channel_id)
+        await send_auction_house_banner(interaction.channel)
 
     ongoing_bidding.remove(interaction.channel_id)
