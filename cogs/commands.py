@@ -26,13 +26,13 @@ CATEGORY_CONFIG = {
     "Public": {
         "emoji": PUBLIC_EMOJI,
         "label": "Public",
-        "color": 0xF0E68C,
+        "color": 0xECBDC4,
         "thumbnail": PUBLIC_THUMBNAIL,
     },
     "Staff": {
         "emoji": STAFF_EMOJI,
         "label": "Staff",
-        "color": 0xFFFF8F,
+        "color": 0xF4589A,
         "thumbnail": STAFF_THUMBNAIL,
     },
 }
@@ -106,7 +106,7 @@ class PaginatedCategoryView(discord.ui.View):
                 )
             embed.set_image(url=MAIN_DIVIDER)
             embed.set_footer(
-                text=f"📄 Page {self.page + 1} of {self.max_page + 1} • 🗝️ {len(self.commands)} commands"
+                text=f"📄 Page {self.page + 1} of {self.max_page + 1} • 🌷 {len(self.commands)} commands"
             )
 
 
@@ -243,7 +243,7 @@ class CommandsView(commands.Cog):
 
             view = CommandCategoryMenuView(user, command_map)
             description = (
-                "Choose a command group by clicking the buttons below! 🗝️\n\n"
+                "Choose a command group by clicking the buttons below! 🌷\n\n"
                 + "\n".join(view.category_lines)
             )
 
@@ -266,6 +266,6 @@ class CommandsView(commands.Cog):
 async def setup(bot: commands.Bot):
     try:
         await bot.add_cog(CommandsView(bot))
-        # pretty_log("info", "🗝️ CommandsView cog loaded successfully!")
+        # pretty_log("info", "🌷 CommandsView cog loaded successfully!")
     except Exception as e:
         pretty_log("critical", f"Failed to load CommandsView cog: {e}")
