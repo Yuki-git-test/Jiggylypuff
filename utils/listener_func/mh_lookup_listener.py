@@ -9,7 +9,12 @@ import discord
 
 from constants.grand_line_auction_constants import KHY_USER_ID
 from utils.cache.cache_list import market_value_cache
-from utils.db.market_value_db import update_market_value_via_listener
+from utils.db.market_value_db import (
+    fetch_image_link_cache,
+    fetch_market_value_cache,
+    update_image_link,
+    update_market_value_via_listener,
+)
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
     compute_minimum_increment,
@@ -53,6 +58,17 @@ async def lookup_listener(bot, message: discord.Message):
     if not pokemon_name:
         debug_log(f"Could not extract pokemon name from embed title: '{embed_title}'")
         return
+    embed_image_url = embed.image.url if embed.image else None
+    image_link_cache = fetch_image_link_cache(pokemon_name)
+    if embed_image_url and image_link_cache != embed_image_url:
+        await update_image_link(bot, pokemon_name, embed_image_url)
+        debug_log(
+            f"Updated image link for {pokemon_name} to {embed_image_url} based on mh lookup command output."
+        )
+        pretty_log(
+            "info",
+            f"Updated image link for {pokemon_name} to {embed_image_url} based on mh lookup command output.",
+        )
 
     lowest_market = extract_lowest_market_from_embed(embed)
     if lowest_market is None:
@@ -68,6 +84,7 @@ async def lookup_listener(bot, message: discord.Message):
         pokemon_name=formatted_name,
         lowest_market=lowest_market,
         listing_seen=str(current_time),
+        image_link=embed_image_url,
     )
     pretty_log(
         "info",
