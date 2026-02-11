@@ -3,7 +3,7 @@ import discord
 from constants.grand_line_auction_constants import GLA_SERVER_ID
 from utils.cache.cache_list import processing_auction_end
 from utils.db.auction_db import delete_auction, fetch_all_due_auctions
-from utils.group_commands_func.auction.end import send_auction_house_banner
+from utils.group_commands_func.auction.stop import send_auction_house_banner
 from utils.group_commands_func.auction.start import make_auction_embed
 from utils.logs.pretty_log import pretty_log
 from utils.essentials.minimum_increment import (
@@ -11,6 +11,7 @@ from utils.essentials.minimum_increment import (
     compute_minimum_increment,
     format_names_for_market_value_lookup,
 )
+from utils.functions.webhook_func import send_auction_log
 
 async def check_and_end_due_auctions(bot: discord.Client):
     due_auctions = await fetch_all_due_auctions(bot)
@@ -86,6 +87,11 @@ async def check_and_end_due_auctions(bot: discord.Client):
                 tag="auction",
                 message=f"Auction for {auction['pokemon']} ended in channel ID {channel_id}",
                 bot=bot,
+            )
+            # Send auction log to auction log channel
+            await send_auction_log(
+                bot=bot,
+                embed=embed,
             )
 
         except Exception as e:

@@ -9,7 +9,7 @@ from utils.essentials.minimum_increment import (
     compute_minimum_increment,
     format_names_for_market_value_lookup,
 )
-from utils.group_commands_func.auction.end import send_auction_house_banner
+from utils.group_commands_func.auction.stop import send_auction_house_banner
 from utils.group_commands_func.auction.start import make_auction_embed
 from utils.logs.pretty_log import pretty_log
 from utils.visuals.pretty_defer import pretty_defer

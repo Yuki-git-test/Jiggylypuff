@@ -4,7 +4,7 @@ from datetime import datetime
 import discord
 from discord import app_commands
 from discord.ext import commands
-
+from utils.functions.webhook_func import send_auction_log
 from constants.grand_line_auction_constants import (
     GRAND_LINE_AUCTION_ROLES,
     KHY_CHANNEL_ID,
@@ -34,7 +34,7 @@ from utils.parser.duration_parser import parse_duration
 from utils.parser.number_parser import parse_compact_number
 from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
-from utils.group_commands_func.auction.end import send_auction_house_banner
+from utils.group_commands_func.auction.stop import send_auction_house_banner
 from .start import is_being_processed, make_auction_embed
 
 INITIAL_MIN_BID = 100_000
@@ -191,5 +191,10 @@ async def bid_func(
         # Remove from db
         await delete_auction(bot, channel_id=interaction.channel_id)
         await send_auction_house_banner(interaction.channel)
+        ongoing_bidding.remove(interaction.channel_id)
+        await send_auction_log(
+            bot=bot,
+            embed=new_embed,
+        )
 
     ongoing_bidding.remove(interaction.channel_id)

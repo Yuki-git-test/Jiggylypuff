@@ -32,7 +32,7 @@ async def view_accepted_list_func(
             content="This auction does not have an accepted Pokémon list."
         )
         return
-
+    accepted_list = f"- {accepted_list.replace(', ', '\n- ')}"
     embed = discord.Embed(
         title="Accepted Pokémon List",
         description=accepted_list,

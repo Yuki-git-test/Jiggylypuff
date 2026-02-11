@@ -1,5 +1,6 @@
 import discord
 
+from constants.grand_line_auction_constants import GRAND_LINE_AUCTION_ROLES
 from utils.cache.cache_list import auction_cache
 from utils.db.auction_db import fetch_all_auctions
 from utils.logs.pretty_log import pretty_log
@@ -56,6 +57,32 @@ async def load_auction_cache(bot: discord.Client):
 
 def get_auction_cache(channel_id: int):
     return auction_cache.get(channel_id, None)
+
+
+async def check_cache_and_reload_if_missing(bot: discord.Client):
+    """Checks if the auction cache is empty, and reloads it from the database if so."""
+    if not auction_cache:
+        pretty_log("cache", "Auction cache is empty, reloading from database...")
+        await load_auction_cache(bot)
+        if not auction_cache:
+            pretty_log("warn", "Auction cache is still empty after reload attempt.")
+            return False
+    return True
+
+
+def if_user_has_ongoing_auction_cache(user: discord.Member) -> bool:
+    """Checks if the user has an ongoing auction in the cache,
+    If server booster role they are allowed to have 2 ongoing auctions"""
+    ongoing_auctions_count = 0
+    max_auctions_allowed = 1
+    if GRAND_LINE_AUCTION_ROLES.server_booster in [role.id for role in user.roles]:
+        max_auctions_allowed = 2
+    for auction in auction_cache.values():
+        if auction["host_id"] == user.id:
+            ongoing_auctions_count += 1
+            if ongoing_auctions_count >= max_auctions_allowed:
+                return True, max_auctions_allowed, ongoing_auctions_count
+    return False, max_auctions_allowed, ongoing_auctions_count
 
 
 def upsert_auction_cache(

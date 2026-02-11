@@ -24,13 +24,13 @@ async def send_auction_house_banner(channel):
     await channel.send(content)
 
 
-async def end_auction_func(
+async def stop_auction_func(
     bot: commands.Bot,
     interaction: discord.Interaction,
 ):
-    """Ends an active auction in the current channel"""
+    """Stops an active auction in the current channel"""
     loader = await pretty_defer(
-        interaction=interaction, content="Ending auction...", ephemeral=False
+        interaction=interaction, content="Stopping auction...", ephemeral=False
     )
 
     channel_id = interaction.channel_id
@@ -44,7 +44,7 @@ async def end_auction_func(
 
         formatted_display = format_names_for_market_value_lookup(auction["pokemon"])
     else:
-        formatted_display="Bulk Pokemon"
+        formatted_display = "Bulk Pokemon"
     # Delete the auction from the database
     await delete_auction(bot, channel_id)
     pretty_log(
@@ -53,4 +53,6 @@ async def end_auction_func(
         bot=bot,
     )
 
-    await loader.success(content=f"Auction for {formatted_display} has ended.")
+    await loader.success(
+        content=f"Auction for {formatted_display.title()} has stopped."
+    )

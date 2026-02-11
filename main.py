@@ -97,6 +97,29 @@ async def on_command_error(ctx, error):
 
 
 # ❀───────────────────────────────❀
+#      💖  Startup Checklist 💖
+# ❀───────────────────────────────❀
+async def startup_checklist(bot: commands.Bot):
+    from utils.cache.cache_list import (
+        auction_cache,
+        market_value_cache,
+        webhook_url_cache,
+    )
+
+    # ❀ This divider stays untouched ❀
+    print("\n୨୧ ⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔♡⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔ ୨୧")
+    print(f"✅ {len(bot.cogs)} 🌷 Cogs Loaded")
+    print(f"✅ {len(auction_cache)} 🌺 Ongoing Auctions")
+    print(f"✅ {len(market_value_cache)} 💎 Market Values")
+    print(f"✅ {len(webhook_url_cache)} 🍧 Webhook Urls")
+    pg_status = "Ready" if hasattr(bot, "pg_pool") else "Not Ready"
+    print(f"✅ {pg_status} 🧁  PostgreSQL Pool")
+    total_slash_commands = sum(1 for _ in bot.tree.walk_commands())
+    print(f"✅ {total_slash_commands} 🧸 Slash Commands Synced")
+    print("୨୧ ⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔♡⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔ ୨୧\n")
+
+
+# ❀───────────────────────────────❀
 #       💖  Event Hooks 💖
 # ❀───────────────────────────────❀
 # ❀ On Ready ❀
@@ -116,7 +139,14 @@ async def on_ready():
         refresh_all_caches.start()
         pretty_log(message="✅ Started cache refresh task", tag="ready")
 
+    # ❀ Run startup checklist ❀
+    await startup_checklist(bot)
 
+    await bot.change_presence(
+        activity=discord.Activity(
+            type=discord.ActivityType.watching, name=" 🩷 /commands"
+        )
+    )
 # ❀───────────────────────────────❀
 #       💖  Setup Hook 💖
 # ❀───────────────────────────────❀

@@ -107,6 +107,8 @@ async def set_market_value(
             message=f"Failed to set market value for {pokemon_name}: {e}",
             bot=bot,
         )
+
+
 def fetch_image_link_cache(pokemon_name: str):
     """
     Get image link for a Pokémon from cache.
@@ -116,6 +118,7 @@ def fetch_image_link_cache(pokemon_name: str):
     if pokemon_data:
         return pokemon_data.get("image_link", None)
     return None
+
 
 async def update_market_value_via_listener(
     bot,
@@ -457,6 +460,21 @@ async def sync_market_cache_to_db(bot, market_cache: dict):
             bot=bot,
         )
         return False
+
+
+async def check_and_load_market_cache(bot) -> dict:
+    """
+    Check if market value cache is loaded, if not load from database.
+    """
+    if not market_value_cache:
+        await load_market_cache_from_db(bot)
+        if not market_value_cache:
+            pretty_log(
+                tag="error",
+                message="Market value cache is empty after loading from database.",
+                bot=bot,
+            )
+    return market_value_cache
 
 
 # --------------------

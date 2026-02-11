@@ -1,4 +1,6 @@
+import re
 import time
+from collections import defaultdict
 from datetime import datetime
 
 import discord
@@ -35,6 +37,7 @@ from utils.essentials.minimum_increment import (
 from utils.group_commands_func.auction.start import (
     make_auction_embed,
     send_to_khy_channel,
+    check_and_load_auction_and_market_cache,
 )
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
@@ -55,10 +58,6 @@ TEST_ENDS_ON = int(time.time()) + 180
 
 
 MAX_DURATION_SECONDS = 18_000
-
-
-import re
-from collections import defaultdict
 
 
 def extract_pokemon_list_and_validate(pokemon):
@@ -123,7 +122,17 @@ async def bulk_start_auction_func(
         interaction=interaction, content="Generating embed...", ephemeral=False
     )
 
-    from utils.cache.auction_cache import is_there_ongoing_auction_cache
+    from utils.cache.auction_cache import (
+        if_user_has_ongoing_auction_cache,
+        is_there_ongoing_auction_cache,
+    )
+    # Check if caches are populated
+    auc, market = await check_and_load_auction_and_market_cache(bot)
+    if not auc or not market:
+        await loader.error(
+            content="Caches are still loading. Please try again in a moment."
+        )
+        return
 
     if is_there_ongoing_auction_cache(interaction.channel.id):
         await loader.error(
@@ -136,6 +145,16 @@ async def bulk_start_auction_func(
         debug_log(
             f"Received test_embed command with pokemon={pokemon}, duration={duration}, autobuy={autobuy}, accepted_pokemon={accepted_pokemon}"
         )
+        # Check if user has an ongoing auction
+        status, max_auctions_allowed, ongoing_auctions_count = (
+            if_user_has_ongoing_auction_cache(user)
+        )
+        if status:
+            await loader.error(
+                content=f"You already have {ongoing_auctions_count} ongoing auction(s). The maximum allowed is {max_auctions_allowed}."
+            )
+            return
+
         valid_pokemon, invalid_pokemon, rarities, total_pokemon = (
             extract_pokemon_list_and_validate(pokemon)
         )
@@ -238,10 +257,42 @@ async def bulk_start_auction_func(
                     content="Invalid autobuy amount. Please provide a number like `1k`, `1.5m`, etc."
                 )
                 return
+            if real_autobuy < MIN_AUCTION_VALUE:
+                format_min_value = format_price_w_coin(MIN_AUCTION_VALUE)
+                debug_log(
+                    f"Autobuy amount {real_autobuy} is below minimum initial value bid of {MIN_AUCTION_VALUE}."
+                )
+                await loader.error(
+                    content=f"Autobuy amount must be at least {format_min_value}"
+                )
+                return
 
         gif_url = Images.bulk_auction
         if TESTING_DURATION:
             unix_end = TEST_ENDS_ON
+        try:
+            auction_embed, content = make_auction_embed(
+                bot=bot,
+                user=user,
+                pokemon=pokemon,
+                unix_end=str(unix_end),
+                autobuy=real_autobuy,
+                accepted_pokemon=accepted_pokemon,
+                min_increment=min_increment,
+                gif_url=gif_url,
+                is_bulk=True,
+                bulk_rarity=rarity,
+            )
+            await loader.success(content="", embed=auction_embed, add_check_emoji=False)
+            auction_msg = await interaction.channel.send(content=content)
+        except Exception as e:
+            debug_log(f"Error generating or sending auction embed: {e}")
+            pretty_log("error", f"Error generating or sending auction embed: {e}")
+            await loader.error(
+                content="An error occurred while generating or sending the auction embed."
+            )
+            return
+
         try:
             await upsert_auction(
                 bot=bot,
@@ -269,20 +320,6 @@ async def bulk_start_auction_func(
                 content="An error occurred while saving the auction data."
             )
             return
-
-        auction_embed, content = make_auction_embed(
-            bot=bot,
-            user=user,
-            pokemon=pokemon,
-            unix_end=str(unix_end),
-            autobuy=real_autobuy,
-            accepted_pokemon=accepted_pokemon,
-            min_increment=min_increment,
-            gif_url=gif_url,
-            is_bulk=True,
-        )
-        await loader.success(content="", embed=auction_embed, add_check_emoji=False)
-        auction_msg = await interaction.channel.send(content=content)
 
         # Make broadcast embed, same with auction embed but no highest offer/bidder and with a footer about checking the auction channel
         broadcast_embed, broadcast_content = make_auction_embed(

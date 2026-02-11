@@ -48,8 +48,8 @@ async def update_accepted_list_func(
     # Update accepted list in database
     try:
         await update_accepted_list(bot, interaction.channel_id, new_accepted_list)
-        content = f"💌 Accepted Pokémon list has been updated to:\n{new_accepted_list}"
-        await loader.success(content=content)
+        content = f"💌 Accepted Pokémon list has been updated to:\n> - {new_accepted_list}"
+        await loader.success(content=content, add_check_emoji=False)
     except Exception as e:
         pretty_log(
             tag="error",

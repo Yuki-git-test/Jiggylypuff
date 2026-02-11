@@ -5,6 +5,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from constants.auction import MIN_AUCTION_VALUE
 from constants.grand_line_auction_constants import (
     GLA_SERVER_ID,
     GRAND_LINE_AUCTION_ROLES,
@@ -15,6 +16,7 @@ from utils.autocomplete.pokemon_autocomplete import (
     format_price_w_coin,
     pokemon_autocomplete,
 )
+from utils.cache.auction_cache import check_cache_and_reload_if_missing
 from utils.cache.cache_list import (
     ongoing_bidding,
     processing_auction_end,
@@ -22,7 +24,10 @@ from utils.cache.cache_list import (
     processing_update_ends_on,
 )
 from utils.db.auction_db import upsert_auction
-from utils.db.market_value_db import fetch_lowest_market_value_cache
+from utils.db.market_value_db import (
+    check_and_load_market_cache,
+    fetch_lowest_market_value_cache,
+)
 from utils.essentials.auction_broadcast import broadcast_auction
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
@@ -48,6 +53,13 @@ TEST_ENDS_ON = int(time.time()) + 180
 
 
 MAX_DURATION_SECONDS = 18_000
+
+
+async def check_and_load_auction_and_market_cache(bot: commands.Bot):
+    """Checks and loads auction and market value caches."""
+    auc_cache = await check_cache_and_reload_if_missing(bot)
+    market_cache = await check_and_load_market_cache(bot)
+    return auc_cache, market_cache
 
 
 def is_being_processed(channel_id: int) -> str | None:
@@ -78,6 +90,7 @@ def make_auction_embed(
     last_bidder_mention: str = None,
     is_bulk: bool = False,
     min_increment: int = None,
+    bulk_rarity: str = None,
 ):
     guild = bot.get_guild(GLA_SERVER_ID)
 
@@ -86,14 +99,21 @@ def make_auction_embed(
         rarity = get_rarity(pokemon)
     else:
         pokemon = "Bulk"
-        rarity = "bulk"
+        rarity = bulk_rarity
+
     rarity_details = RARITY_MAP.get(rarity, {})
     debug_log(f"Rarity details: {rarity_details}")
     color = rarity_details.get("color", 0xFFFFFF)
     emoji = rarity_details.get("emoji", "")
     auction_roles_ids = rarity_details.get("auction role", [])
     debug_log(f"Auction role IDs: {auction_roles_ids}")
+    bulk_auction_role = guild.get_role(GRAND_LINE_AUCTION_ROLES.bulk_auction)
     auction_roles_objs = [guild.get_role(role_id) for role_id in auction_roles_ids]
+
+    if is_bulk:
+        # Insert bulk_auction_role at the start
+        auction_roles_objs = [bulk_auction_role] + auction_roles_objs
+
     debug_log(f"Auction role objects: {auction_roles_objs}")
     exclusive_auction_role = guild.get_role(GRAND_LINE_AUCTION_ROLES.exclusive_auction)
     auction_roles_str = (
@@ -135,18 +155,27 @@ def make_auction_embed(
     embed.add_field(name="Accepted Pokémon", value=accepted_pokemon_str, inline=True)
 
     # Highest Offer/Bidder: only one set of fields
-    show_na_offer = (context == "auction" or context == "broadcast") and (
+    show_na_offer = (context in ("auction", "broadcast")) and (
         not highest_offer or highest_offer == 0
     )
     if show_na_offer:
         debug_log("No highest offer, showing N/A for offer and bidder")
         embed.add_field(name="Highest Offer", value="N/A", inline=False)
         embed.add_field(name="Highest Bidder", value="N/A", inline=True)
+    elif context == "autobought":
+        value_str = (
+            getattr(highest_bidder, "mention", "N/A") if highest_bidder else "N/A"
+        )
+        debug_log(f"Showing Autobought, bidder: {value_str}")
+        embed.add_field(name="Highest Offer", value="Autobought", inline=False)
+        embed.add_field(name="Highest Bidder", value=value_str, inline=True)
     else:
         formatted_highest_offer = (
             format_price_w_coin(highest_offer) if highest_offer else "N/A"
         )
-        value_str = highest_bidder.mention if highest_bidder else "N/A"
+        value_str = (
+            getattr(highest_bidder, "mention", "N/A") if highest_bidder else "N/A"
+        )
         debug_log(
             f"Showing highest offer: {formatted_highest_offer}, bidder: {value_str}"
         )
@@ -206,7 +235,18 @@ async def start_auction_func(
         interaction=interaction, content="Generating embed...", ephemeral=False
     )
 
-    from utils.cache.auction_cache import is_there_ongoing_auction_cache
+    from utils.cache.auction_cache import (
+        if_user_has_ongoing_auction_cache,
+        is_there_ongoing_auction_cache,
+    )
+
+    # Check if caches are populated
+    auc, market = await check_and_load_auction_and_market_cache(bot)
+    if auc is None or market is None:
+        await loader.error(
+            content="Caches are still loading. Please try again in a moment."
+        )
+        return
 
     if is_there_ongoing_auction_cache(interaction.channel.id):
         await loader.error(
@@ -219,6 +259,16 @@ async def start_auction_func(
         debug_log(
             f"Received test_embed command with pokemon={pokemon}, duration={duration}, autobuy={autobuy}, accepted_pokemon={accepted_pokemon}"
         )
+        # Check if user has an ongoing auction
+        status, max_auctions_allowed, ongoing_auctions_count = (
+            if_user_has_ongoing_auction_cache(user)
+        )
+        if status:
+            await loader.error(
+                content=f"You already have {ongoing_auctions_count} ongoing auction(s). The maximum allowed is {max_auctions_allowed}."
+            )
+            return
+
         if not is_mon_auctionable(pokemon):
             debug_log(f"{pokemon} is not auctionable.")
             await loader.error(
@@ -289,6 +339,15 @@ async def start_auction_func(
                 debug_log("Invalid autobuy amount provided.")
                 await loader.error(
                     content="Invalid autobuy amount. Please provide a number like `1k`, `1.5m`, etc."
+                )
+                return
+            if real_autobuy < MIN_AUCTION_VALUE:
+                format_min_value = format_price_w_coin(MIN_AUCTION_VALUE)
+                debug_log(
+                    f"Autobuy amount {real_autobuy} is below minimum initial value bid of {MIN_AUCTION_VALUE}."
+                )
+                await loader.error(
+                    content=f"Autobuy amount must be at least {format_min_value}"
                 )
                 return
 

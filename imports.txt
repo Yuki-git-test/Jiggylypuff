@@ -18,3 +18,4 @@ from utils.logs.debug_log import debug_log, enable_debug
 # enable_debug(f"{__name__}.fl_rs_checker")
 
 from utils.group_commands_func.auction.end import send_auction_house_banner
+from utils.functions.webhook_func import send_auction_log
