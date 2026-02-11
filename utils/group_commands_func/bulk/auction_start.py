@@ -1,52 +1,32 @@
 import re
 import time
 from collections import defaultdict
-from datetime import datetime
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from constants.aesthetic import Images
-from constants.grand_line_auction_constants import (
-    GRAND_LINE_AUCTION_ROLES,
-    KHY_CHANNEL_ID,
-)
 from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
-from utils.autocomplete.pokemon_autocomplete import (
-    format_price_w_coin,
-    pokemon_autocomplete,
-)
-from utils.cache.cache_list import (
-    ongoing_bidding,
-    processing_auction_end,
-    processing_roll_back,
-    processing_update_ends_on,
-)
+from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.db.auction_db import upsert_auction
-from utils.db.market_value_db import fetch_lowest_market_value_cache
 from utils.essentials.auction_broadcast import broadcast_auction
 from utils.essentials.minimum_increment import (
     MIN_AUCTION_VALUE,
     compute_maximum_auction_duration_seconds,
-    compute_minimum_increment,
     compute_minimum_increment_for_bulk,
     compute_total_bulk_value,
-    format_names_for_market_value_lookup,
 )
 from utils.group_commands_func.auction.start import (
-    make_auction_embed,
-    send_to_khy_channel,
     check_and_load_auction_and_market_cache,
+    make_auction_embed,
 )
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 from utils.parser.duration_parser import parse_duration
 from utils.parser.number_parser import parse_compact_number
-from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
 
-enable_debug(f"{__name__}.bulk_start_auction_func")
+# enable_debug(f"{__name__}.bulk_start_auction_func")
 
 # Max duration is 300 minutes (5 hours)
 TESTING = True
@@ -118,6 +98,9 @@ async def bulk_start_auction_func(
     autobuy: str = None,
     accepted_pokemon: str = None,
 ):
+    channel_name = (
+        interaction.channel.name if interaction.channel else "Unknown Channel"
+    )
     loader = await pretty_defer(
         interaction=interaction, content="Generating embed...", ephemeral=False
     )
@@ -126,6 +109,7 @@ async def bulk_start_auction_func(
         if_user_has_ongoing_auction_cache,
         is_there_ongoing_auction_cache,
     )
+
     # Check if caches are populated
     auc, market = await check_and_load_auction_and_market_cache(bot)
     if not auc or not market:
@@ -312,6 +296,10 @@ async def bulk_start_auction_func(
                 market_value=total_bulk_value,
                 minimum_increment=min_increment,
                 is_bulk=True,
+            )
+            pretty_log(
+                "auction",
+                f"Started bulk auction for {pokemon} with total value {total_bulk_value} and minimum increment {min_increment} in channel {channel_name}",
             )
         except Exception as e:
             debug_log(f"Error upserting auction: {e}")

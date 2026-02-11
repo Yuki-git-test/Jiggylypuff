@@ -105,12 +105,12 @@ async def startup_checklist(bot: commands.Bot):
         market_value_cache,
         webhook_url_cache,
     )
-
+    total_market_values = len(market_value_cache)
     # ❀ This divider stays untouched ❀
     print("\n୨୧ ⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔♡⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔⏔ ୨୧")
     print(f"✅ {len(bot.cogs)} 🌷 Cogs Loaded")
     print(f"✅ {len(auction_cache)} 🌺 Ongoing Auctions")
-    print(f"✅ {len(market_value_cache)} 💎 Market Values")
+    print(f"✅ {total_market_values:,} 💎 Market Values")
     print(f"✅ {len(webhook_url_cache)} 🍧 Webhook Urls")
     pg_status = "Ready" if hasattr(bot, "pg_pool") else "Not Ready"
     print(f"✅ {pg_status} 🧁  PostgreSQL Pool")
@@ -133,6 +133,9 @@ async def on_ready():
     # ❀ Log how many slash commands were synced ❀
     total_commands = len(bot.tree.get_commands())
     pretty_log("ready", f"Synced {total_commands} slash commands.")
+
+    # Load all caches immediately on startup
+    await load_all_cache(bot)
 
     # Start the cache refresh task if it's not already running
     if not refresh_all_caches.is_running():

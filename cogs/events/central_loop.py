@@ -47,12 +47,12 @@ class CentralLoop(commands.Cog):
         )
         while not self.bot.is_closed():
             try:
-                pretty_log(
+                """pretty_log(
                     "",
                     "🔂 Running background checks...",
                     label="🌻 CENTRAL LOOP",
                     bot=self.bot,
-                )
+                )"""
 
                 # 🍰 Check and end due auctions
                 await check_and_end_due_auctions(self.bot)

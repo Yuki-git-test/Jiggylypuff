@@ -77,10 +77,10 @@ async def fetch_all_webhook_urls(bot: discord.Client):
                     "url": row["url"],
                 }
                 webhook_urls.append(webhook_entry)
-            pretty_log(
+            """pretty_log(
                 message=f"✅ Fetched {len(webhook_urls)} webhook URLs for bot ID: {bot_id}",
                 tag="db",
-            )
+            )"""
             return webhook_urls
     except Exception as e:
         pretty_log(

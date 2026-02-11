@@ -14,9 +14,9 @@ LOW_RARITIES = ["common", "uncommon", "rare", "super rare"]
 RARITIES_WITH_VARRYING_INCREMENT = ["golden", "gmax", "sgmax", "golden mega"]
 from utils.db.market_value_db import fetch_lowest_market_value_cache
 
-enable_debug(f"{__name__}.compute_minimum_increment")
-enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
-enable_debug(f"{__name__}.compute_total_bulk_value")
+#enable_debug(f"{__name__}.compute_minimum_increment")
+#enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
+#enable_debug(f"{__name__}.compute_total_bulk_value")
 
 def format_names_for_market_value_lookup(pokemon_name: str):
     """

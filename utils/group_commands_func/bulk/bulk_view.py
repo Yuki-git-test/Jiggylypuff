@@ -14,7 +14,9 @@ async def bulk_view_func(
     interaction: discord.Interaction,
 ):
     """Views the details of the current bulk auction."""
-
+    channel_name = (
+        interaction.channel.name if interaction.channel else "Unknown Channel"
+    )
     # Defer
     loader = await pretty_defer(
         interaction=interaction,
@@ -42,3 +44,8 @@ async def bulk_view_func(
 
     content = f"💌 **Bulk Auction Details:**\n{description}"
     await loader.success(content=content, add_check_emoji=False)
+    pretty_log(
+        tag="auction",
+        message=f"Bulk auction details viewed by {interaction.user.display_name} in channel {channel_name}",
+        bot=bot,
+    )

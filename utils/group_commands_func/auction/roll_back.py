@@ -50,7 +50,7 @@ async def roll_back_func(
     loader = await pretty_defer(
         interaction=interaction, content="Rolling back the bid...", ephemeral=False
     )
-
+    channel_name = interaction.channel.name if interaction.channel else "Unknown Channel"
     # Get auction details from cache
     auction = get_auction_cache(interaction.channel_id)
     if not auction:
@@ -136,7 +136,7 @@ async def roll_back_func(
         await loader.error(content=content)
         pretty_log(
             "error",
-            f"Error creating auction embed during bid roll back in channel {channel_id}: {str(e)}",
+            f"Error creating auction embed during bid roll back in channel {channel_name}: {str(e)}",
         )
         return
     # Update auction in database
@@ -150,12 +150,16 @@ async def roll_back_func(
         await interaction.channel.send(embed=embed)
         await loader.success(content="Bid rolled back successfully.")
         processing_roll_back.remove(channel_id)
+        pretty_log(
+            "auction",
+            f"Bid rolled back to {format_price_w_coin(amount_value)} for {member.display_name} by {interaction.user.name} in channel {channel_name}",
+        )
     except Exception as e:
         processing_roll_back.remove(channel_id)
         content = f"Error updating auction bid in database: {str(e)}"
         await loader.error(content=content)
         pretty_log(
             "error",
-            f"Error updating auction bid in database during bid roll back in channel {channel_id}: {str(e)}",
+            f"Error updating auction bid in database during bid roll back in channel {channel_name}: {str(e)}",
         )
         return

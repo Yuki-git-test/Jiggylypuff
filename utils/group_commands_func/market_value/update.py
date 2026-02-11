@@ -69,7 +69,7 @@ async def update_market_value_func(
     if is_pokemon_exclusive:
         is_exclusive = True
     else:
-        is_exclusive = market_data["is_exclusive"] if market_data else False
+        is_exclusive = market_data.get("is_exclusive", False) if market_data else False
 
     if is_exclusive:
         color = RARITY_MAP.get("exclusive", {}).get("color", color)
@@ -94,12 +94,22 @@ async def update_market_value_func(
     # Listing seen is current time unix seconds
     listing_seen = int(time.time())
     # Update in db
-    if amount and is_pokemon_exclusive:
-        await update_market_value(
-            bot, pokemon, amount_value, str(listing_seen), image_link, is_exclusive
-        )
-    elif not amount and is_pokemon_exclusive:
-        await update_is_exclusive(bot, pokemon, is_exclusive, image_link)
+    try:
+        if amount and is_pokemon_exclusive:
+            await update_market_value(
+                bot, pokemon, amount_value, str(listing_seen), image_link, is_exclusive
+            )
+        elif not amount and is_pokemon_exclusive:
+            await update_is_exclusive(bot, pokemon, is_exclusive, image_link)
+
+        elif amount and not is_pokemon_exclusive:
+            await update_market_value(
+                bot, pokemon, amount_value, str(listing_seen), image_link, is_exclusive
+            )
+    except Exception as e:
+        debug_log(f"Error updating market value for {pokemon}: {e}")
+        await loader.error(content="An error occurred while updating the market value.")
+        return
 
     # Build embed
     embed = discord.Embed(

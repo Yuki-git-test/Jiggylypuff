@@ -2,7 +2,9 @@ import discord
 from discord.ext import commands
 
 from constants.grand_line_auction_constants import (
+    CC_SERVER_ID,
     GLA_SERVER_ID,
+    MH_APP_ID,
     POKEMEOW_APPLICATION_ID,
 )
 
@@ -10,7 +12,21 @@ from constants.grand_line_auction_constants import (
 # 🩵 Import Listener Functions
 # ————————————————————————————————
 from utils.listener_func.market_view_listener import market_view_listener
+from utils.listener_func.mh_lookup_listener import lookup_listener
 from utils.logs.pretty_log import pretty_log
+
+
+def embed_has_field_name(embed, name_to_match: str) -> bool:
+    """
+    Returns True if any field name in the embed matches the given string.
+    Returns False immediately if the embed has no fields.
+    """
+    if not hasattr(embed, "fields") or not embed.fields:
+        return False
+    for field in embed.fields:
+        if field.name == name_to_match:
+            return True
+    return False
 
 
 # 🐾────────────────────────────────────────────
@@ -32,10 +48,22 @@ class MessageCreateListener(commands.Cog):
         guild = message.guild
         if not guild:
             return  # Skip DMs
-        if guild.id != GLA_SERVER_ID:
+        if guild.id != GLA_SERVER_ID and guild.id != CC_SERVER_ID:
             return  # Only process messages from VN Allstars server
 
         try:
+            # ————————————————————————————————
+            # 🩵 MH Lookup Listener
+            # ————————————————————————————————
+            if message.author.bot and message.author.id == MH_APP_ID:
+                if message.embeds[0]:
+                    if embed_has_field_name(message.embeds[0], "Lowest Market"):
+                        pretty_log(
+                            "info",
+                            f"Detected MH lookup embed with 'Lowest Market' field. Triggering MH lookup listener.",
+                        )
+                        await lookup_listener(self.bot, message)
+
             # ————————————————————————————————
             # 🏰 Ignore non-PokéMeow bot messages
             # ————————————————————————————————

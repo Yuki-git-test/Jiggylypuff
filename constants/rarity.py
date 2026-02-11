@@ -9,6 +9,7 @@ from utils.essentials.minimum_increment import (
     compute_minimum_increment,
     format_names_for_market_value_lookup,
 )
+
 from .pokemons import *
 
 
@@ -122,7 +123,7 @@ def get_rarity(pokemon: str):
         return "shiny"
     elif "gigantamax" in name:
         return "gmax"
-    elif "mega" in name:
+    elif "mega" in name and not "yanmega" in name and not "meganium" in name:
         return "mega"
 
     # Fallback to the list (case-insensitive)
@@ -146,6 +147,15 @@ auctionable_mons_list = (
     + list(rare_mons.keys())
     + list(uncommon_mons.keys())
     + list(common_mons.keys())
+)
+in_game_mons_list = (
+    auctionable_mons_list
+    + list(shiny_mons.keys())
+    + list(golden_mons.keys())
+    + list(mega_mons.keys())
+    + list(gigantamax_mons.keys())
+    + list(shiny_mega_mons.keys())
+    + list(shiny_gigantamax_mons.keys())
 )
 
 

@@ -6,8 +6,8 @@ from discord.ext import commands
 
 from utils.autocomplete.pokemon_autocomplete import pokemon_autocomplete
 from utils.essentials.command_safe import run_command_safe
-from utils.group_commands_func.market_value import *
 from utils.essentials.role_checks import auctioneer_only
+from utils.group_commands_func.market_value import *
 
 GROUP_NAME = "market-value"
 
@@ -36,7 +36,7 @@ class Market_Value_Group_Commands(commands.Cog):
         pokemon="Name of the Pokémon (e.g. Pikachu, Charizard)",
     )
     @app_commands.autocomplete(pokemon=pokemon_autocomplete)
-    @auctioneer_only()  
+    @auctioneer_only()
     async def market_value_view(
         self,
         interaction: discord.Interaction,
@@ -51,7 +51,9 @@ class Market_Value_Group_Commands(commands.Cog):
             command_func=view_market_value_func,
             pokemon=pokemon,
         )
+
     market_value_view.extras = {"category": "Staff"}
+
     # 🎀────────────────────────────────────────────
     #          🌸 /market-value update 🌸
     # 🎀────────────────────────────────────────────
@@ -86,7 +88,29 @@ class Market_Value_Group_Commands(commands.Cog):
             is_pokemon_exclusive=is_pokemon_exclusive,
             image_link=image_link,
         )
+
     market_value_update.extras = {"category": "Staff"}
+
+    # 🎀────────────────────────────────────────────
+    #          🌸 /market-value filter 🌸
+    # 🎀────────────────────────────────────────────
+    @market_value_group.command(
+        name="filter",
+        description="Filter in-game Pokémon that do not have market value data",
+    )
+    @auctioneer_only()
+    async def market_value_filter(self, interaction: discord.Interaction):
+        slash_cmd_name = "market-value filter"
+
+        await run_command_safe(
+            bot=self.bot,
+            interaction=interaction,
+            slash_cmd_name=slash_cmd_name,
+            command_func=market_value_filter_func,
+        )
+
+    market_value_filter.extras = {"category": "Staff"}
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(Market_Value_Group_Commands(bot))

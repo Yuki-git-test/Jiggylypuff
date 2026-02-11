@@ -10,8 +10,10 @@ from utils.db.market_value_db import update_market_value_via_listener
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 
-enable_debug(f"{__name__}.market_view_listener")
-enable_debug(f"{__name__}.parse_first_market_listing")
+from .price_data_listener import pink_check_react_if_khy
+
+# enable_debug(f"{__name__}.market_view_listener")
+# enable_debug(f"{__name__}.parse_first_market_listing")
 
 
 def extract_pokemon_name_from_author(author_name: str) -> str | None:
@@ -165,6 +167,7 @@ async def market_view_listener(bot: discord.Client, message: discord.Message):
             bot, parsed_pokemon_name_from_author, price_each, str(date_listed)
         )
         debug_log("Called update_market_value.")
+        await pink_check_react_if_khy(message)
     else:
         debug_log("No valid market listing found in the embed description.")
     debug_log("Exiting market_view_listener.")

@@ -2,7 +2,7 @@
 import discord
 from discord import app_commands
 
-from constants.grand_line_auction_constants import GRAND_LINE_AUCTION_ROLES
+from constants.grand_line_auction_constants import GRAND_LINE_AUCTION_ROLES, KHY_USER_ID
 
 
 # 🌸──────────────────────────────────────────────────────
@@ -33,6 +33,9 @@ def has_role(user_roles, role_id):
 # ───────────────────────────────────────────────────────
 def auctioneer_only():
     async def predicate(interaction: discord.Interaction):
+        # Allow khy (user id: 952071312124313611)
+        if getattr(interaction.user, "id", None) == KHY_USER_ID:
+            return True
         if not has_role(interaction.user.roles, GRAND_LINE_AUCTION_ROLES.auctioneer):
             raise AuctioneerCheckFailure(ERROR_MESSAGES["auctioneer"])
         return True
@@ -45,7 +48,13 @@ def is_staff_member(member: discord.Member) -> bool:
     """
     Checks if a member has any staff roles.
     """
-    staff_role_ids = [GRAND_LINE_AUCTION_ROLES.auctioneer, GRAND_LINE_AUCTION_ROLES.moderator]
+    # Allow khy (user id: 952071312124313611)
+    if getattr(member, "id", None) == KHY_USER_ID:
+        return True
+    staff_role_ids = [
+        GRAND_LINE_AUCTION_ROLES.auctioneer,
+        GRAND_LINE_AUCTION_ROLES.moderator,
+    ]
     if any(role.id in staff_role_ids for role in member.roles):
         return True
     return False

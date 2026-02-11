@@ -2,14 +2,6 @@ import discord
 
 from constants.grand_line_auction_constants import GLA_SERVER_ID
 from utils.cache.auction_cache import get_auction_cache
-from utils.cache.cache_list import processing_auction_end
-from utils.db.auction_db import delete_auction, fetch_all_due_auctions
-from utils.essentials.minimum_increment import (
-    compute_maximum_auction_duration_seconds,
-    compute_minimum_increment,
-    format_names_for_market_value_lookup,
-)
-from utils.group_commands_func.auction.stop import send_auction_house_banner
 from utils.group_commands_func.auction.start import make_auction_embed
 from utils.logs.pretty_log import pretty_log
 from utils.visuals.pretty_defer import pretty_defer
@@ -70,6 +62,11 @@ async def auction_info_func(bot: discord.Client, interaction: discord.Interactio
             is_bulk=is_bulk,
         )
         await loader.success(content="", embed=embed, add_check_emoji=False)
+        pretty_log(
+            tag="auction",
+            message=f"Sent auction info for channel  {interaction.channel.name}",
+            bot=bot,
+        )
     except Exception as e:
         pretty_log(
             tag="error",

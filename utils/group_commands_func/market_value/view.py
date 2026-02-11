@@ -24,7 +24,7 @@ from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
 from utils.essentials.minimum_increment import format_names_for_market_value_lookup
 
-enable_debug(f"{__name__}.view_market_value_func")
+#enable_debug(f"{__name__}.view_market_value_func")
 
 
 # enable_debug(f"{__name__}.format_timestamp")

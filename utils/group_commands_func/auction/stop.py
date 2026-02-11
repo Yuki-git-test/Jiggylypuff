@@ -1,18 +1,11 @@
-import time
 from datetime import datetime
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from constants.aesthetic import Images
-from constants.grand_line_auction_constants import KHY_CHANNEL_ID
 from utils.db.auction_db import delete_auction, fetch_auction_by_channel_id
-from utils.essentials.minimum_increment import (
-    compute_maximum_auction_duration_seconds,
-    compute_minimum_increment,
-    format_names_for_market_value_lookup,
-)
+from utils.essentials.minimum_increment import format_names_for_market_value_lookup
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 from utils.visuals.pretty_defer import pretty_defer
@@ -47,9 +40,12 @@ async def stop_auction_func(
         formatted_display = "Bulk Pokemon"
     # Delete the auction from the database
     await delete_auction(bot, channel_id)
+    channel_name = (
+        interaction.channel.name if interaction.channel else "Unknown Channel"
+    )
     pretty_log(
         tag="auction",
-        message=f"Auction for {auction['pokemon']} ended by {interaction.user.display_name} in channel ID {channel_id}",
+        message=f"Auction for {auction['pokemon']} stopped by {interaction.user.display_name} in channel  {channel_name}",
         bot=bot,
     )
 

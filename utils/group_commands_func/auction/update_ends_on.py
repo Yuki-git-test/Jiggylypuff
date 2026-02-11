@@ -2,33 +2,14 @@ import time
 from datetime import datetime
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
-from constants.auction import MIN_INITIAL_BID
-from constants.grand_line_auction_constants import (
-    GRAND_LINE_AUCTION_ROLES,
-    KHY_CHANNEL_ID,
-)
-from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
-from utils.autocomplete.pokemon_autocomplete import (
-    format_price_w_coin,
-    pokemon_autocomplete,
-)
 from utils.cache.auction_cache import get_auction_cache
 from utils.cache.cache_list import processing_update_ends_on
 from utils.db.auction_db import update_ends_on
-from utils.db.market_value_db import fetch_lowest_market_value_cache
-from utils.essentials.auction_broadcast import broadcast_auction
-from utils.essentials.minimum_increment import (
-    compute_maximum_auction_duration_seconds,
-    compute_minimum_increment,
-)
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 from utils.parser.duration_parser import parse_total_seconds
-from utils.parser.number_parser import parse_compact_number
-from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
 
 from .start import is_being_processed, make_auction_embed
@@ -41,6 +22,9 @@ async def update_ends_on_func(
     duration: str,
 ):
     """Handles the logic for updating the ends_on time of an auction. Only usable by auctioneers."""
+    channel_name = (
+        interaction.channel.name if interaction.channel else "Unknown Channel"
+    )
     guild = interaction.guild
     channel_id = interaction.channel.id
     loader = await pretty_defer(
@@ -132,12 +116,16 @@ async def update_ends_on_func(
         await interaction.channel.send(embed=embed)
         await loader.success(content="Auction end time updated successfully.")
         processing_update_ends_on.remove(channel_id)
+        pretty_log(
+            "auction",
+            f"Auction end time updated to {datetime.fromtimestamp(new_ends_on).strftime('%Y-%m-%d %H:%M:%S')} by {interaction.user.name} in channel {channel_name}",
+        )
     except Exception as e:
         processing_update_ends_on.remove(channel_id)
         content = f"Error updating auction bid in database: {str(e)}"
         await loader.error(content=content)
         pretty_log(
             "error",
-            f"Error updating auction bid in database during bid roll back in channel {channel_id}: {str(e)}",
+            f"Error updating auction bid in database during bid roll back in channel {channel_name}: {str(e)}",
         )
         return

@@ -1573,8 +1573,10 @@ def old_get_dex_number_by_name(name: str) -> Optional[int]:
             return dex_num
     return None
 
-from utils.logs.pretty_log import pretty_log
+
 from constants.weakness_chart import weakness_chart as WEAKNESS_CHART
+from utils.logs.pretty_log import pretty_log
+
 
 def old_old_get_dex_number_by_name(name: str) -> Optional[int]:
     """
@@ -1599,9 +1601,13 @@ def old_old_get_dex_number_by_name(name: str) -> Optional[int]:
     return None
 
 
+from utils.logs.debug_log import debug_log, enable_debug
+
+
+# enable_debug(f"{__name__}.format_timestamp")
 def get_dex_number_by_name(pokemon_name: str) -> str:
     """Get the Pokédex number for a given Pokémon name."""
-    pretty_log("info", f"Fetching Dex number for Pokémon '{pokemon_name}'.")
+    debug_log(f"Fetching Dex number for Pokémon '{pokemon_name}'.")
     pokemon_name = pokemon_name.lower().replace("♀", "-f").replace("♂", "-m")
     if "shiny mega " in pokemon_name:
         pokemon_name = pokemon_name.replace("shiny mega ", "shiny mega-")
@@ -1612,18 +1618,16 @@ def get_dex_number_by_name(pokemon_name: str) -> str:
     if "gigantamax " in pokemon_name:
         pokemon_name = pokemon_name.replace("gigantamax ", "gigantamax-")
 
-    pretty_log("debug", f"Normalized Pokémon name: '{pokemon_name}'.")
+    debug_log(f"Normalized Pokémon name: '{pokemon_name}'.")
     if pokemon_name not in WEAKNESS_CHART:
         pretty_log("info", f"Pokémon '{pokemon_name}' not found in the weakness chart.")
         return "N/A"
     dex_number = WEAKNESS_CHART.get(pokemon_name, {}).get("dex")
     if dex_number is None:
-        pretty_log(
-            "error", f"Dex number for Pokémon '{pokemon_name}' is not available."
-        )
+        debug_log(f"Dex number for Pokémon '{pokemon_name}' is not available.")
         return None
 
     # Remove leading zeros, but ensure '0' is returned if dex_number is all zeros
     dex_number = dex_number.lstrip("0") or "0"
-    pretty_log("info", f"Found Dex number {dex_number} for Pokémon '{pokemon_name}'.")
+    debug_log(f"Found Dex number {dex_number} for Pokémon '{pokemon_name}'.")
     return dex_number

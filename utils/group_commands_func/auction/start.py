@@ -2,7 +2,6 @@ import time
 from datetime import datetime
 
 import discord
-from discord import app_commands
 from discord.ext import commands
 
 from constants.auction import MIN_AUCTION_VALUE
@@ -12,10 +11,7 @@ from constants.grand_line_auction_constants import (
     KHY_CHANNEL_ID,
 )
 from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
-from utils.autocomplete.pokemon_autocomplete import (
-    format_price_w_coin,
-    pokemon_autocomplete,
-)
+from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.cache.auction_cache import check_cache_and_reload_if_missing
 from utils.cache.cache_list import (
     ongoing_bidding,
@@ -41,7 +37,7 @@ from utils.parser.number_parser import parse_compact_number
 from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
 
-enable_debug(f"{__name__}.make_auction_embed")
+# enable_debug(f"{__name__}.make_auction_embed")
 
 # Max duration is 300 minutes (5 hours)
 TESTING = True
@@ -410,6 +406,13 @@ async def start_auction_func(
 
         await loader.success(content="", embed=auction_embed, add_check_emoji=False)
         auction_msg = await interaction.channel.send(content=content)
+        pretty_log(
+            "auction",
+            message=(
+                f"Auction started for {pokemon} by {user.name} in channel {interaction.channel.name}. Duration: {duration}, Autobuy: {display_autobuy}, Accepted Pokémon: {accepted_pokemon if accepted_pokemon else 'None'}"
+                f". Market Value: {lowest_market_value if lowest_market_value is not None else 'N/A'}. Minimum Increment: {min_increment:,}"
+            ),
+        )
 
         # Make broadcast embed, same with auction embed but no highest offer/bidder and with a footer about checking the auction channel
         broadcast_embed, broadcast_content = make_auction_embed(

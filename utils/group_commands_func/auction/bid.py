@@ -1,40 +1,19 @@
 import time
-from datetime import datetime
 
 import discord
-from discord import app_commands
 from discord.ext import commands
-from utils.functions.webhook_func import send_auction_log
-from constants.grand_line_auction_constants import (
-    GRAND_LINE_AUCTION_ROLES,
-    KHY_CHANNEL_ID,
-)
-from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
-from utils.autocomplete.pokemon_autocomplete import (
-    format_price_w_coin,
-    pokemon_autocomplete,
-)
+
+from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.cache.auction_cache import get_auction_cache
-from utils.cache.cache_list import (
-    ongoing_bidding,
-    processing_auction_end,
-    processing_roll_back,
-    processing_update_ends_on,
-)
-from utils.db.auction_db import delete_auction, update_auction_bid, upsert_auction
-from utils.db.market_value_db import fetch_lowest_market_value_cache
-from utils.essentials.auction_broadcast import broadcast_auction
-from utils.essentials.minimum_increment import (
-    compute_maximum_auction_duration_seconds,
-    compute_minimum_increment,
-)
+from utils.cache.cache_list import ongoing_bidding
+from utils.db.auction_db import delete_auction, update_auction_bid
+from utils.functions.webhook_func import send_auction_log
+from utils.group_commands_func.auction.stop import send_auction_house_banner
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
-from utils.parser.duration_parser import parse_duration
 from utils.parser.number_parser import parse_compact_number
-from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
-from utils.group_commands_func.auction.stop import send_auction_house_banner
+
 from .start import is_being_processed, make_auction_embed
 
 INITIAL_MIN_BID = 100_000
@@ -198,3 +177,7 @@ async def bid_func(
         )
 
     ongoing_bidding.remove(interaction.channel_id)
+    pretty_log(
+        "auction",
+        f"User {interaction.user} placed a bid of {format_price_w_coin(amount_value)} in channel {interaction.channel.name} Autobought: {is_autobought}",
+    )
