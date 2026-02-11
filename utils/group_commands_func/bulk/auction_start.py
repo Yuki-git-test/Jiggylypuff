@@ -19,6 +19,10 @@ from utils.essentials.minimum_increment import (
 from utils.group_commands_func.auction.start import (
     check_and_load_auction_and_market_cache,
     make_auction_embed,
+    TESTING,
+    TESTING_DURATION,
+    TEST_ENDS_ON,
+    TESTING_BROADCAST
 )
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
@@ -28,13 +32,6 @@ from utils.visuals.pretty_defer import pretty_defer
 
 # enable_debug(f"{__name__}.bulk_start_auction_func")
 
-# Max duration is 300 minutes (5 hours)
-TESTING = True
-
-
-TESTING_DURATION = False
-# Test ends on is set to 3 minutes from now to allow testing of end time related features. Remember to set TESTING_DURATION to False when done testing.
-TEST_ENDS_ON = int(time.time()) + 180
 
 
 MAX_DURATION_SECONDS = 18_000
@@ -322,7 +319,7 @@ async def bulk_start_auction_func(
             message_link=auction_msg.jump_url,
         )
 
-        if not TESTING:
+        if not TESTING or TESTING_BROADCAST:
             await broadcast_auction(
                 bot=bot,
                 guild=interaction.guild,

@@ -49,6 +49,7 @@ TEST_ENDS_ON = int(time.time()) + 180
 
 
 MAX_DURATION_SECONDS = 18_000
+TESTING_BROADCAST = False
 
 
 async def check_and_load_auction_and_market_cache(bot: commands.Bot):
@@ -427,7 +428,7 @@ async def start_auction_func(
             message_link=auction_msg.jump_url,
         )
 
-        if not TESTING:
+        if not TESTING or TESTING_BROADCAST:
             await broadcast_auction(
                 bot=bot,
                 guild=interaction.guild,

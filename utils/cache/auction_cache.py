@@ -65,7 +65,7 @@ async def check_cache_and_reload_if_missing(bot: discord.Client):
         pretty_log("cache", "Auction cache is empty, reloading from database...")
         await load_auction_cache(bot)
         if not auction_cache:
-            pretty_log("warn", "Auction cache is still empty after reload attempt.")
+            pretty_log("info", "Auction cache is still empty after reload attempt.")
             return False
     return True
 
