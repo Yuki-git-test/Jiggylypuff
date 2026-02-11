@@ -3,10 +3,11 @@ from typing import Literal
 
 from constants.paldea_galar_dict import get_dex_number_by_name
 from constants.pokemon_gifs import *
+from utils.db.market_value_db import fetch_image_link_cache
+from utils.essentials.minimum_increment import format_names_for_market_value_lookup
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
-from utils.essentials.minimum_increment import format_names_for_market_value_lookup
-from utils.db.market_value_db import fetch_image_link_cache
+
 enable_debug(f"{__name__}.get_pokemon_gif")
 hyphen_mon_names = [
     "jangmo-o",
@@ -32,7 +33,7 @@ def get_pokemon_gif(input_name: str):
             message=f"Found cached image link for '{formatted_name}': {cached_link}",
         )
         return cached_link
-    
+
     original_input = input_name
     shiny = False
     golden = False
@@ -143,8 +144,9 @@ def get_pokemon_gif(input_name: str):
             )
         else:
             if dex_number:
-                # Try the direct URL first
-                gif_url = f"https://graphics.tppcrpg.net/xy/golden/{dex_number}M.gif"
+                # Pad dex_number to 3 digits
+                padded_dex = str(dex_number).zfill(3)
+                gif_url = f"https://graphics.tppcrpg.net/xy/golden/{padded_dex}M.gif"
                 debug_log(f"Golden regular form: direct gif_url={gif_url}")
 
             else:

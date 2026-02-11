@@ -59,6 +59,7 @@ async def update_market_value_func(
             image_link = market_data["image_link"]
         else:
             image_link = get_pokemon_gif(pokemon)
+            
     rarity = get_rarity(pokemon)
     rarity_emoji = RARITY_MAP.get(rarity, {}).get("emoji", "")
     color = RARITY_MAP.get(rarity, {}).get("color", 0xFFFFFF)
