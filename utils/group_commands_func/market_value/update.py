@@ -15,6 +15,7 @@ from utils.autocomplete.pokemon_autocomplete import (
 )
 from utils.db.market_value_db import (
     fetch_market_value_cache,
+    update_image_link,
     update_is_exclusive,
     update_market_value,
 )
@@ -40,9 +41,9 @@ async def update_market_value_func(
     loader = await pretty_defer(
         interaction=interaction, content="Updating market value...", ephemeral=False
     )
-    if not amount and not is_pokemon_exclusive:
+    if not amount and not is_pokemon_exclusive and not image_link:
         await loader.error(
-            content="You must provide at least one value to update. (amount or exclusivity)"
+            content="You must provide at least one value to update. (amount , exclusivity or image link)"
         )
         return
 
@@ -106,6 +107,8 @@ async def update_market_value_func(
             await update_market_value(
                 bot, pokemon, amount_value, str(listing_seen), image_link, is_exclusive
             )
+        elif not amount and not is_pokemon_exclusive and image_link:
+            await update_image_link(bot, pokemon, image_link)
     except Exception as e:
         debug_log(f"Error updating market value for {pokemon}: {e}")
         await loader.error(content="An error occurred while updating the market value.")

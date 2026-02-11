@@ -9,7 +9,7 @@ import discord
 
 from constants.grand_line_auction_constants import KHY_USER_ID
 from utils.cache.cache_list import market_value_cache
-from utils.db.market_value_db import update_market_value_via_listener
+from utils.db.market_value_db import update_image_link, update_market_value_via_listener
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
     compute_minimum_increment,
@@ -19,7 +19,7 @@ from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 
 # enable_debug(f"{__name__}.price_data_listener")
-#enable_debug(f"{__name__}.pink_check_react_if_khy")
+# enable_debug(f"{__name__}.pink_check_react_if_khy")
 
 
 async def pink_check_react_if_khy(message: discord.Message):
@@ -91,24 +91,36 @@ async def price_data_listener(bot: discord.Client, message: discord.Message):
         return
 
     embed_title = embed.title or ""
+    embed_image = embed.image.url if embed.image else ""
     pokemon_name = extract_pokemon_name_from_title(embed_title)
     if not pokemon_name:
         debug_log(f"Could not extract Pokémon name from embed title: {embed_title}")
 
     formatted_name = format_names_for_market_value_lookup(pokemon_name)
     if formatted_name in market_value_cache:
+        # Update the image link in the cache if it's different from the existing one
+        market_info = market_value_cache[formatted_name]
+        existing_image_link = market_info.get("image_link")
+        if embed_image and existing_image_link != embed_image:
+            await update_image_link(bot, formatted_name, embed_image)
+
         debug_log(
             f"Market value for {formatted_name} already exists in cache. Skipping update."
         )
         return
 
     all_time_avg_price = extract_price_from_embed(embed)
+
     if all_time_avg_price is None:
         debug_log(f"Could not extract price from embed for Pokémon {pokemon_name}")
         return
     date_listed = int(time.time())
     await update_market_value_via_listener(
-        bot, formatted_name, all_time_avg_price, str(date_listed)
+        bot,
+        formatted_name,
+        all_time_avg_price,
+        str(date_listed),
+        image_link=embed_image,
     )
     pretty_log(
         "info",
