@@ -145,7 +145,7 @@ async def view_market_value_func(
         title=f"Market Value Info",
         description=(
             f"- **Pokemon:** {formatted_pokemon}\n"
-            f"- **Lowest Market Value:** {format_price_w_coin(lowest_market) if lowest_market != 'N/A' else 'N/A'}\n"
+            f"- **Market Value:** {format_price_w_coin(lowest_market) if lowest_market != 'N/A' else 'N/A'}\n"
             f"- **Exclusive:** {'Yes' if is_exclusive else 'No'}\n"
             f"- **Last Listing Seen:** {display_listing_seen}"
         ),
