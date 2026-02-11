@@ -153,9 +153,11 @@ async def market_value_filter_func(bot: commands.Bot, interaction: discord.Inter
 
     try:
         pretty_log("info", f"Paginator will send {len(embeds)} embeds.")
-        await loader.success(content="Filtered mons sent to paginator view.")
-        await interaction.followup.send(
-            embed=embeds[0], view=Paginator(embeds), ephemeral=False
+        await loader.success(
+            content="",
+            embed=embeds[0],
+            view=Paginator(embeds),
+            ephemeral=False,
         )
     except Exception as e:
         debug_log(f"Error sending market value filter embeds: {e}")

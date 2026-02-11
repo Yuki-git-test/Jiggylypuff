@@ -56,7 +56,7 @@ class MessageCreateListener(commands.Cog):
             # 🩵 MH Lookup Listener
             # ————————————————————————————————
             if message.author.bot and message.author.id == MH_APP_ID:
-                if message.embeds[0]:
+                if message.embeds and message.embeds[0]:
                     if embed_has_field_name(message.embeds[0], "Lowest Market"):
                         pretty_log(
                             "info",
