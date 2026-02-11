@@ -74,7 +74,6 @@ def compute_total_bulk_value(pokemon_list):
             has_no_market_value.append((pokemon_name, quantity, None))
     return total_value, has_market_value, has_no_market_value, is_any_exclusive
 
-
 def compute_minimum_increment_for_bulk(
     total_bulk_value: int, rarity:str,  any_exclusive: bool
 ):

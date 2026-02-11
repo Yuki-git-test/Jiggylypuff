@@ -33,6 +33,12 @@ def extract_pokemon_name_before_hash(text):
     return match.group(1).strip() if match else text.strip()
 
 
+# Extracts the dex number from a string like 'Wooper #194'. Returns an int or None.
+def extract_dex_number(text):
+    match = re.search(r"#(\d+)", text)
+    return int(match.group(1)) if match else None
+
+
 def extract_lowest_market_from_embed(embed) -> int | None:
     """Extracts the lowest market value from a Discord embed, ignoring emoji, and returns it as an int."""
     for field in embed.fields:

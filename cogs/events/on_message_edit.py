@@ -8,8 +8,11 @@ from constants.grand_line_auction_constants import (
     GLA_SERVER_ID,
     POKEMEOW_APPLICATION_ID,
 )
+from utils.listener_func.dex_listener import dex_listener
 from utils.listener_func.price_data_listener import price_data_listener
 from utils.logs.pretty_log import pretty_log
+
+from .on_message_create import embed_has_field_name
 
 # ️────────────────────────────────────────────
 #        ⚔️ Message Triggers
@@ -68,6 +71,16 @@ class OnMessageEditCog(commands.Cog):
                     f"Detected edit with embed title containing '{triggers['price_data_listener']}'. Triggering price data listener.",
                 )
                 await price_data_listener(self.bot, after)
+        # ————————————————————————————————
+        # 🩵 DEX LISTENER
+        # ————————————————————————————————
+        if first_embed:
+            if embed_has_field_name(first_embed, "Dex Number"):
+                pretty_log(
+                    "info",
+                    f"Detected dex command embed with 'Dex Number' field. Triggering dex listener.",
+                )
+                await dex_listener(self.bot, after)
 
 
 async def setup(bot: commands.Bot):

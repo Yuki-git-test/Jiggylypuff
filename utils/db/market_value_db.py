@@ -218,6 +218,48 @@ async def update_market_value_via_listener(
         )
 
 
+async def upsert_image_link(bot, pokemon_name: str, image_link: str):
+    """
+    Upsert the image link for a Pokémon in the market value table.
+    """
+    pokemon_name = pokemon_name.lower()
+    try:
+        async with bot.pg_pool.acquire() as conn:
+            await conn.execute(
+                """
+                INSERT INTO market_value (pokemon_name, image_link, last_updated)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (pokemon_name) DO UPDATE SET
+                    image_link = $2,
+                    last_updated = $3
+                """,
+                pokemon_name,
+                image_link,
+                datetime.utcnow(),
+            )
+            # Update in cache as well
+            if pokemon_name in market_value_cache:
+                market_value_cache[pokemon_name]["image_link"] = image_link
+            else:
+                market_value_cache[pokemon_name] = {
+                    "pokemon": pokemon_name,
+                    "image_link": image_link,
+                }
+
+        pretty_log(
+            tag="db",
+            message=f"Upserted image link for {pokemon_name}",
+            bot=bot,
+        )
+
+    except Exception as e:
+        pretty_log(
+            tag="error",
+            message=f"Failed to upsert image link for {pokemon_name}: {e}",
+            bot=bot,
+        )
+
+
 async def update_image_link(bot, pokemon_name: str, image_link: str):
     """
     Update the image link for a Pokémon in the market value table.

@@ -9,7 +9,11 @@ import discord
 
 from constants.grand_line_auction_constants import KHY_USER_ID
 from utils.cache.cache_list import market_value_cache
-from utils.db.market_value_db import update_image_link, update_market_value_via_listener
+from utils.db.market_value_db import (
+    fetch_lowest_market_value_cache,
+    update_image_link,
+    update_market_value_via_listener,
+)
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
     compute_minimum_increment,
@@ -105,9 +109,14 @@ async def price_data_listener(bot: discord.Client, message: discord.Message):
             await update_image_link(bot, formatted_name, embed_image)
 
         debug_log(
-            f"Market value for {formatted_name} already exists in cache. Skipping update."
+            f"Market value for {formatted_name} already exists in cache. Skipping update if value is not 0."
         )
-        return
+        lowest_market_value = fetch_lowest_market_value_cache(formatted_name)
+        debug_log(
+            f"Existing lowest market value for {formatted_name} in cache: {lowest_market_value}"
+        )
+        if lowest_market_value != 0:
+            return
 
     all_time_avg_price = extract_price_from_embed(embed)
 

@@ -7,6 +7,7 @@ from constants.grand_line_auction_constants import (
     MH_APP_ID,
     POKEMEOW_APPLICATION_ID,
 )
+from utils.listener_func.dex_listener import dex_listener
 
 # ————————————————————————————————
 # 🩵 Import Listener Functions
@@ -106,6 +107,17 @@ class MessageCreateListener(commands.Cog):
                     message=f"Processing market view message with embed author: {first_embed_author}",
                 )
                 await market_view_listener(self.bot, message)
+
+            # ————————————————————————————————
+            # 🩵 DEX LISTENER
+            # ————————————————————————————————
+            if first_embed:
+                if embed_has_field_name(first_embed, "Dex Number"):
+                    pretty_log(
+                        "info",
+                        f"Detected dex command embed with 'Dex Number' field. Triggering dex listener.",
+                    )
+                    await dex_listener(self.bot, message)
 
         except Exception as e:
             # 🛑────────────────────────────────────────────
