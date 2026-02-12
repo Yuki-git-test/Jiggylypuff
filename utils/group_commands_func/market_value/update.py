@@ -8,13 +8,14 @@ from discord.ext import commands
 
 from constants.grand_line_auction_constants import KHY_CHANNEL_ID
 from constants.paldea_galar_dict import get_dex_number_by_name
-from constants.rarity import RARITY_MAP, get_rarity
+from constants.rarity import RARITY_MAP, get_rarity, is_mon_exclusive
 from utils.autocomplete.pokemon_autocomplete import (
     format_price_w_coin,
     pokemon_autocomplete,
 )
 from utils.db.market_value_db import (
     fetch_market_value_cache,
+    fetch_pokemon_exclusivity_cache,
     update_image_link,
     update_is_exclusive,
     update_market_value,
@@ -59,7 +60,7 @@ async def update_market_value_func(
             image_link = market_data["image_link"]
         else:
             image_link = get_pokemon_gif(pokemon)
-            
+
     rarity = get_rarity(pokemon)
     rarity_emoji = RARITY_MAP.get(rarity, {}).get("emoji", "")
     color = RARITY_MAP.get(rarity, {}).get("color", 0xFFFFFF)
@@ -105,8 +106,13 @@ async def update_market_value_func(
             await update_is_exclusive(bot, pokemon, is_exclusive, image_link)
 
         elif amount and not is_pokemon_exclusive:
+            existing_exclusive_status = fetch_pokemon_exclusivity_cache(pokemon)
+            if existing_exclusive_status != is_exclusive:
+                new_exclusive = is_exclusive
+            else:
+                new_exclusive = existing_exclusive_status
             await update_market_value(
-                bot, pokemon, amount_value, str(listing_seen), image_link, is_exclusive
+                bot, pokemon, amount_value, str(listing_seen), image_link, new_exclusive
             )
         elif not amount and not is_pokemon_exclusive and image_link:
             await update_image_link(bot, pokemon, image_link)

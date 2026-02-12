@@ -8,10 +8,17 @@ from typing import Optional, Tuple
 import discord
 
 from constants.grand_line_auction_constants import KHY_USER_ID
+from constants.rarity import (
+    RARITY_MAP,
+    get_rarity,
+    is_mon_auctionable,
+    is_mon_exclusive,
+)
 from utils.cache.cache_list import market_value_cache
 from utils.db.market_value_db import (
     fetch_image_link_cache,
     fetch_lowest_market_value_cache,
+    fetch_pokemon_exclusivity_cache,
     update_image_link,
     update_market_value_via_listener,
     upsert_image_link,
@@ -45,8 +52,14 @@ async def dex_listener(bot, message: discord.Message):
         return
     embed_image_url = embed.image.url if embed.image else None
     image_link_cache = fetch_image_link_cache(pokemon_name)
+    existing_exclusive_status = fetch_pokemon_exclusivity_cache(pokemon_name)
+    is_exclusive = is_mon_exclusive(pokemon_name)
+    if existing_exclusive_status != is_exclusive:
+        new_exclusive = is_exclusive
+    else:
+        new_exclusive = existing_exclusive_status
     if embed_image_url and image_link_cache != embed_image_url:
-        await upsert_image_link(bot, pokemon_name, embed_image_url)
+        await upsert_image_link(bot, pokemon_name, embed_image_url, new_exclusive)
         debug_log(
             f"Updated image link for {pokemon_name} to {embed_image_url} based on mh lookup command output."
         )

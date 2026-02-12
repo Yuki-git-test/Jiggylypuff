@@ -10,7 +10,12 @@ from constants.grand_line_auction_constants import (
     GRAND_LINE_AUCTION_ROLES,
     KHY_CHANNEL_ID,
 )
-from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
+from constants.rarity import (
+    RARITY_MAP,
+    get_rarity,
+    is_mon_auctionable,
+    is_mon_exclusive,
+)
 from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.cache.auction_cache import check_cache_and_reload_if_missing
 from utils.cache.cache_list import (

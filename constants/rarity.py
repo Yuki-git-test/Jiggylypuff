@@ -3,7 +3,7 @@ from constants.grand_line_auction_constants import (
     GRAND_LINE_AUCTION_EMOJIS,
     GRAND_LINE_AUCTION_ROLES,
 )
-from utils.db.market_value_db import fetch_market_value_cache
+from utils.db.market_value_db import fetch_market_value_cache, is_pokemon_exclusive_cache
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
     compute_minimum_increment,
@@ -157,6 +157,18 @@ in_game_mons_list = (
     + list(shiny_mega_mons.keys())
     + list(shiny_gigantamax_mons.keys())
 )
+exclusive_mons_list = list(exclusive_mons.keys())
+
+def is_mon_exclusive(pokemon: str) -> bool:
+    """
+    Checks if a given Pokémon is exclusive based on the exclusive_mons list or the market value cache.
+    """
+    name = pokemon.lower()
+    if any(name == mon.lower() for mon in exclusive_mons_list):
+        return True
+    # Check cache for exclusivity, if it's exclusive then it's not auctionable
+    pokemon = format_names_for_market_value_lookup(pokemon)
+    return is_pokemon_exclusive_cache(pokemon)
 
 
 def is_mon_auctionable(pokemon: str) -> bool:

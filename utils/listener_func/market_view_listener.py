@@ -6,7 +6,16 @@ from typing import Optional, Tuple
 
 import discord
 
-from utils.db.market_value_db import update_market_value_via_listener
+from constants.rarity import (
+    RARITY_MAP,
+    get_rarity,
+    is_mon_auctionable,
+    is_mon_exclusive,
+)
+from utils.db.market_value_db import (
+    fetch_pokemon_exclusivity_cache,
+    update_market_value_via_listener,
+)
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
 
@@ -163,8 +172,20 @@ async def market_view_listener(bot: discord.Client, message: discord.Message):
         debug_log(
             f"Parsed Pokémon name from embed author: {parsed_pokemon_name_from_author}"
         )
+        existing_exclusive_status = fetch_pokemon_exclusivity_cache(
+            parsed_pokemon_name_from_author
+        )
+        is_exclusive = is_mon_exclusive(parsed_pokemon_name_from_author)
+        if existing_exclusive_status != is_exclusive:
+            new_exclusive = is_exclusive
+        else:
+            new_exclusive = existing_exclusive_status
+
         await update_market_value_via_listener(
-            bot, parsed_pokemon_name_from_author, price_each, str(date_listed)
+            bot,
+            parsed_pokemon_name_from_author,
+            price_each,
+            str(date_listed, new_exclusive),
         )
         debug_log("Called update_market_value.")
         await pink_check_react_if_khy(message)

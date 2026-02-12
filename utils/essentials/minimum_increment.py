@@ -13,7 +13,7 @@ MIN_AUCTION_VALUE = 400_000
 LOW_RARITIES = ["common", "uncommon", "rare", "super rare"]
 RARITIES_WITH_VARRYING_INCREMENT = ["golden", "gmax", "sgmax", "golden mega"]
 from utils.db.market_value_db import fetch_lowest_market_value_cache
-
+from constants.rarity import is_mon_exclusive
 #enable_debug(f"{__name__}.compute_minimum_increment")
 #enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
 #enable_debug(f"{__name__}.compute_total_bulk_value")
@@ -61,7 +61,7 @@ def compute_total_bulk_value(pokemon_list):
         pokemon_name = format_names_for_market_value_lookup(pokemon_name)
         market_value = fetch_lowest_market_value_cache(pokemon_name)
         if not is_any_exclusive:
-            is_exclusive = is_pokemon_exclusive_cache(pokemon_name)
+            is_exclusive = is_mon_exclusive(pokemon_name)
             if is_exclusive:
                 is_any_exclusive = True
         if market_value is not None:
@@ -159,7 +159,7 @@ def compute_minimum_increment(
     if lowered_rarity in LOW_RARITIES:
         debug_log(f"{pokemon_name} is in LOW_RARITIES: {lowered_rarity}")
         # check if exclusive
-        if is_pokemon_exclusive_cache(pokemon_name):
+        if is_mon_exclusive(pokemon_name):
             if lowest_market_value < MIN_AUCTION_VALUE:
                 debug_log(
                     f"{pokemon_name} is exclusive but lowest market value is below minimum auction value. Returning 0."

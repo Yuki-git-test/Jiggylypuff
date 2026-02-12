@@ -8,6 +8,12 @@ from typing import Optional, Tuple
 import discord
 
 from constants.grand_line_auction_constants import KHY_USER_ID
+from constants.rarity import (
+    RARITY_MAP,
+    get_rarity,
+    is_mon_auctionable,
+    is_mon_exclusive,
+)
 from utils.cache.cache_list import market_value_cache
 from utils.db.market_value_db import (
     fetch_lowest_market_value_cache,
@@ -105,6 +111,13 @@ async def price_data_listener(bot: discord.Client, message: discord.Message):
         # Update the image link in the cache if it's different from the existing one
         market_info = market_value_cache[formatted_name]
         existing_image_link = market_info.get("image_link")
+        existing_exclusive_status = market_info.get("is_exclusive")
+        is_exclusive = is_mon_exclusive(pokemon_name)
+        if existing_exclusive_status != is_exclusive:
+            new_exclusive = is_exclusive
+        else:
+            new_exclusive = existing_exclusive_status
+
         if embed_image and existing_image_link != embed_image:
             await update_image_link(bot, formatted_name, embed_image)
 
