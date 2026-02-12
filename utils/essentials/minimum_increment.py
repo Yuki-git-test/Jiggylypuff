@@ -1,6 +1,5 @@
 import discord
 
-
 from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.db.market_value_db import (
     fetch_lowest_market_value_cache,
@@ -12,11 +11,13 @@ from utils.logs.pretty_log import pretty_log
 MIN_AUCTION_VALUE = 400_000
 LOW_RARITIES = ["common", "uncommon", "rare", "super rare"]
 RARITIES_WITH_VARRYING_INCREMENT = ["golden", "gmax", "sgmax", "golden mega"]
+
 from utils.db.market_value_db import fetch_lowest_market_value_cache
-from constants.rarity import is_mon_exclusive
-#enable_debug(f"{__name__}.compute_minimum_increment")
-#enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
-#enable_debug(f"{__name__}.compute_total_bulk_value")
+
+# enable_debug(f"{__name__}.compute_minimum_increment")
+# enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
+# enable_debug(f"{__name__}.compute_total_bulk_value")
+
 
 def format_names_for_market_value_lookup(pokemon_name: str):
     """
@@ -53,6 +54,8 @@ def compute_total_bulk_value(pokemon_list):
     Compute the total market value of a list of Pokémon.
     Expects pokemon_list as [(name, quantity), ...]
     """
+    from constants.rarity import is_mon_exclusive
+
     has_market_value = []
     has_no_market_value = []
     is_any_exclusive = False
@@ -74,8 +77,9 @@ def compute_total_bulk_value(pokemon_list):
             has_no_market_value.append((pokemon_name, quantity, None))
     return total_value, has_market_value, has_no_market_value, is_any_exclusive
 
+
 def compute_minimum_increment_for_bulk(
-    total_bulk_value: int, rarity:str,  any_exclusive: bool
+    total_bulk_value: int, rarity: str, any_exclusive: bool
 ):
     """
     Compute the minimum increment for a Pokémon based on its rarity and current price.
@@ -99,9 +103,7 @@ def compute_minimum_increment_for_bulk(
     default_increment = RARITY_MAP.get(rarity, {}).get("increment value", 50_000)
     debug_log(f"Default increment for rarity {rarity}: {default_increment}")
     if any(r in lowered_rarity for r in RARITIES_WITH_VARRYING_INCREMENT):
-        debug_log(
-            f"Bulk has a rarity with varying increment: {lowered_rarity}"
-        )
+        debug_log(f"Bulk has a rarity with varying increment: {lowered_rarity}")
         # Value from 20.001m to 100m = 250k increment
         if total_bulk_value <= 20_000_000 and total_bulk_value <= 100_000_000:
             debug_log(
@@ -128,7 +130,7 @@ def compute_minimum_increment(
     Compute the minimum increment for a Pokémon based on its rarity and current price.
     Uses the lowest market value from cache to determine increments.
     """
-    from constants.rarity import RARITY_MAP
+    from constants.rarity import RARITY_MAP, is_mon_exclusive
 
     debug_log(
         f"Called compute_minimum_increment with pokemon_name={pokemon_name}, rarity={rarity}"

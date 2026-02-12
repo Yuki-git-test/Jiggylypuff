@@ -3,12 +3,16 @@ from constants.grand_line_auction_constants import (
     GRAND_LINE_AUCTION_EMOJIS,
     GRAND_LINE_AUCTION_ROLES,
 )
-from utils.db.market_value_db import fetch_market_value_cache, is_pokemon_exclusive_cache
+from utils.db.market_value_db import (
+    fetch_market_value_cache,
+    is_pokemon_exclusive_cache,
+)
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
     compute_minimum_increment,
     format_names_for_market_value_lookup,
 )
+from utils.logs.debug_log import debug_log, enable_debug
 
 from .pokemons import *
 
@@ -54,24 +58,28 @@ RARITY_MAP = {
         "emoji": GRAND_LINE_AUCTION_EMOJIS.legendary,
         "auction role": [GRAND_LINE_AUCTION_ROLES.legendary_auction],
         "increment value": 20_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.LEGENDARY_AUCTION],
     },
     "mega": {
         "color": Rarity_Colors.mega,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.mega,
         "auction role": [GRAND_LINE_AUCTION_ROLES.mega_auction],
         "increment value": 50_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.MEGA_AUCTION],
     },
     "gmax": {
         "color": Rarity_Colors.gmax,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.gigantamax,
         "auction role": [GRAND_LINE_AUCTION_ROLES.gmax_auction],
         "increment value": 100_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.GIGANTAMAX_AUCTION],
     },
     "shiny": {
         "color": Rarity_Colors.shiny,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.shiny,
         "auction role": [GRAND_LINE_AUCTION_ROLES.shiny_auction],
         "increment value": 50_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.SHINY_AUCTION],
     },
     "sgmax": {
         "color": Rarity_Colors.sgmax,
@@ -81,6 +89,10 @@ RARITY_MAP = {
             GRAND_LINE_AUCTION_ROLES.gmax_auction,
         ],
         "increment value": 100_000,
+        "category": [
+            GRAND_LINE_AUCTION_CATEGORIES.SHINY_AUCTION,
+            GRAND_LINE_AUCTION_CATEGORIES.GIGANTAMAX_AUCTION,
+        ],
     },
     "smega": {
         "color": Rarity_Colors.smega,
@@ -90,21 +102,28 @@ RARITY_MAP = {
             GRAND_LINE_AUCTION_ROLES.mega_auction,
         ],
         "increment value": 50_000,
+        "category": [
+            GRAND_LINE_AUCTION_CATEGORIES.SHINY_AUCTION,
+            GRAND_LINE_AUCTION_CATEGORIES.MEGA_AUCTION,
+        ],
     },
     "golden": {
         "color": Rarity_Colors.golden,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.golden,
         "auction role": [GRAND_LINE_AUCTION_ROLES.golden_auction],
         "increment value": 100_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.GOLDEN_AUCTION],
     },
     "exclusive": {
         "color": Rarity_Colors.exclusive,
         "auction role": [GRAND_LINE_AUCTION_ROLES.exclusive_auction],
         "increment value": 30_000,
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.EXCLUSIVE_AUCTIONS],
     },
     "bulk": {
         "color": Rarity_Colors.bulk,
         "auction role": [GRAND_LINE_AUCTION_ROLES.bulk_auction],
+        "category": [GRAND_LINE_AUCTION_CATEGORIES.BULK_AUCTION],
     },
 }
 
@@ -147,6 +166,7 @@ auctionable_mons_list = (
     + list(rare_mons.keys())
     + list(uncommon_mons.keys())
     + list(common_mons.keys())
+    + list(exclusive_mons.keys())
 )
 in_game_mons_list = (
     auctionable_mons_list
@@ -159,16 +179,28 @@ in_game_mons_list = (
 )
 exclusive_mons_list = list(exclusive_mons.keys())
 
+
+# enable_debug(f"{__name__}.is_mon_exclusive")
 def is_mon_exclusive(pokemon: str) -> bool:
     """
     Checks if a given Pokémon is exclusive based on the exclusive_mons list or the market value cache.
     """
+    debug_log(f"Checking exclusivity for: {pokemon}")
     name = pokemon.lower()
     if any(name == mon.lower() for mon in exclusive_mons_list):
+        debug_log(f"{pokemon} is exclusive based on the exclusive_mons list.")
         return True
     # Check cache for exclusivity, if it's exclusive then it's not auctionable
     pokemon = format_names_for_market_value_lookup(pokemon)
-    return is_pokemon_exclusive_cache(pokemon)
+    if is_pokemon_exclusive_cache(pokemon):
+        debug_log(f"{pokemon} is exclusive based on the market value cache.")
+        return True
+    else:
+        debug_log(f"{pokemon} is not exclusive based on the market value cache.")
+        return False
+
+
+enable_debug(f"{__name__}.is_mon_auctionable")
 
 
 def is_mon_auctionable(pokemon: str) -> bool:
@@ -178,25 +210,41 @@ def is_mon_auctionable(pokemon: str) -> bool:
     Golden and Shiny variants are auctionable only if present in their respective lists.
     """
     name = pokemon.lower()
+    debug_log(f"Checking if '{pokemon}' is auctionable.")
 
     # Gigantamax and Mega Pokémon are always auctionable except golden variants
     if ("gigantamax" in name or "mega" in name) and "golden" not in name:
+        debug_log(f"'{pokemon}' is Gigantamax or Mega (not golden): auctionable.")
         return True
 
     # Golden variant: check golden_mons list
     if "golden" in name:
-        return any(name == mon.lower() for mon in golden_mons)
+        result = any(name == mon.lower() for mon in golden_mons)
+        debug_log(f"'{pokemon}' is golden. Auctionable: {result}")
+        return result
 
     # Shiny variant: check shiny_mons list
     if "shiny" in name:
-        return any(name == mon.lower() for mon in shiny_mons)
+        result = any(name == mon.lower() for mon in shiny_mons)
+        debug_log(f"'{pokemon}' is shiny. Auctionable: {result}")
+        if not result:
+            # Check exclusives list
+            result = any(name == mon.lower() for mon in exclusive_mons)
+            debug_log(
+                f"'{pokemon}' is shiny but not in shiny list. Checking exclusives. Auctionable: {result}"
+            )
+
+        return result
 
     # Fallback: check general auctionable list
     if any(name == mon.lower() for mon in auctionable_mons_list):
+        debug_log(f"'{pokemon}' found in general auctionable list.")
         return True
     # Check cache for market value, if it exists then it's auctionable
-    pokemon = format_names_for_market_value_lookup(pokemon)
-    market_value = fetch_market_value_cache(pokemon)
+    pokemon_lookup = format_names_for_market_value_lookup(pokemon)
+    market_value = fetch_market_value_cache(pokemon_lookup)
     if market_value is not None:
+        debug_log(f"'{pokemon}' has market value ({market_value}): auctionable.")
         return True
+    debug_log(f"'{pokemon}' is not auctionable.")
     return False

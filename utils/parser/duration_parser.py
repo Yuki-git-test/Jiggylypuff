@@ -2,8 +2,53 @@ import re
 import time
 from datetime import timedelta
 
+from constants.auction import (
+    MAX_REGULAR_AUCTION_SECONDS,
+    MAX_SPEED_AUCTION_SECONDS,
+    MIN_REGULAR_AUCTION_SECONDS,
+    MIN_SPEED_AUCTION_SECONDS,
+)
 
-def parse_duration(duration_str: str, max_duration: int) -> tuple[str, int]:
+
+def format_seconds(seconds: int) -> str:
+    parts = []
+    days, rem = divmod(seconds, 86400)
+    hours, rem = divmod(rem, 3600)
+    minutes, rem = divmod(rem, 60)
+
+    # Handle exact multiples for cleaner output
+    if days and hours == 0 and minutes == 0 and rem == 0:
+        unit = "day" if days == 1 else "days"
+        return f"{days} {unit}"
+    if hours and minutes == 0 and rem == 0:
+        unit = "hour" if hours == 1 else "hours"
+        return f"{hours} {unit}"
+    if minutes and rem == 0 and days == 0 and hours == 0:
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit}"
+    if rem and days == 0 and hours == 0 and minutes == 0:
+        unit = "second" if rem == 1 else "seconds"
+        return f"{rem} {unit}"
+
+    # Otherwise, build composite string
+    if days:
+        unit = "day" if days == 1 else "days"
+        parts.append(f"{days} {unit}")
+    if hours:
+        unit = "hour" if hours == 1 else "hours"
+        parts.append(f"{hours} {unit}")
+    if minutes:
+        unit = "minute" if minutes == 1 else "minutes"
+        parts.append(f"{minutes} {unit}")
+    if rem:
+        unit = "second" if rem == 1 else "seconds"
+        parts.append(f"{rem} {unit}")
+    return " and ".join(parts)
+
+
+def parse_duration(
+    duration_str: str, max_duration: int, is_speed_auc: bool = False
+) -> tuple[str, int, int]:
     """
     Parses a duration string like:
     - "3d"
@@ -39,15 +84,17 @@ def parse_duration(duration_str: str, max_duration: int) -> tuple[str, int]:
 
     total_seconds = timedelta(days=days, hours=hours, minutes=minutes).total_seconds()
 
+    MIN_SECONDS = (
+        MIN_SPEED_AUCTION_SECONDS if is_speed_auc else MIN_REGULAR_AUCTION_SECONDS
+    )
+    MAX_SECONDS = MAX_SPEED_AUCTION_SECONDS if is_speed_auc else max_duration
     # Minimum duration is 60 minutes
-    if total_seconds < 3_600:
-        raise ValueError("Minimum duration is **1 hour**.")
+    if total_seconds < MIN_SECONDS:
+        raise ValueError(f"Duration too short. Minimum is {MIN_SECONDS // 60} minutes.")
 
     # Maximum duration check
-    if total_seconds > max_duration:
-        raise ValueError(
-            f"Duration too long. Maximum is {max_duration // 3600} hours."
-        )
+    if total_seconds > MAX_SECONDS:
+        raise ValueError(f"Duration too long. Maximum is {MAX_SECONDS // 3600} hours.")
 
     # Create human-readable normalized string
     parts = []
@@ -60,7 +107,8 @@ def parse_duration(duration_str: str, max_duration: int) -> tuple[str, int]:
     normalized_str = " ".join(parts)
 
     unix_end = int(time.time() + total_seconds)
-    return normalized_str, unix_end
+    return normalized_str, unix_end, MAX_SECONDS
+
 
 def parse_total_seconds(duration_str: str) -> int:
     """Parses a duration string and returns total seconds."""

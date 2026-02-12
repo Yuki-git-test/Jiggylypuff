@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 
 from constants.aesthetic import Images
+from constants.auction import MAX_SPEED_AUCTION_SECONDS
+from constants.grand_line_auction_constants import GRAND_LINE_AUCTION_ROLES
 from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
 from utils.autocomplete.pokemon_autocomplete import format_price_w_coin
 from utils.db.auction_db import upsert_auction
@@ -16,22 +18,23 @@ from utils.essentials.minimum_increment import (
     compute_minimum_increment_for_bulk,
     compute_total_bulk_value,
 )
+from utils.functions.auction import check_if_right_channel_rarity, is_auction_channel
 from utils.group_commands_func.auction.start import (
-    check_and_load_auction_and_market_cache,
-    make_auction_embed,
-    TESTING,
-    TESTING_DURATION,
     TEST_ENDS_ON,
-    TESTING_BROADCAST
+    TESTING,
+    TESTING_BROADCAST,
+    TESTING_DURATION,
+    check_and_load_auction_and_market_cache,
+    is_speed_auction,
+    make_auction_embed,
 )
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
-from utils.parser.duration_parser import parse_duration
+from utils.parser.duration_parser import format_seconds, parse_duration
 from utils.parser.number_parser import parse_compact_number
 from utils.visuals.pretty_defer import pretty_defer
 
 # enable_debug(f"{__name__}.bulk_start_auction_func")
-
 
 
 MAX_DURATION_SECONDS = 18_000
@@ -109,12 +112,19 @@ async def bulk_start_auction_func(
 
     # Check if caches are populated
     auc, market = await check_and_load_auction_and_market_cache(bot)
-    if not auc or not market:
+    if auc is None or market is None:
         await loader.error(
             content="Caches are still loading. Please try again in a moment."
         )
         return
 
+    # Check if auction channel
+    passed, error_msg = is_auction_channel(interaction.channel, interaction.user)
+    if not passed:
+        await loader.error(content=error_msg)
+        return
+
+    # Check if ongoing auction in channel
     if is_there_ongoing_auction_cache(interaction.channel.id):
         await loader.error(
             content="There is already an ongoing auction in this channel."
@@ -209,17 +219,22 @@ async def bulk_start_auction_func(
         debug_log(
             f"Maximum auction duration for {pokemon} is {max_duration_seconds} seconds."
         )
+        is_speed_auc = is_speed_auction(interaction.channel)
+        if is_speed_auc:
+            max_duration_seconds = MAX_SPEED_AUCTION_SECONDS
 
         try:
-            normalized_duration, unix_end = parse_duration(
-                duration, max_duration_seconds
+            normalized_duration, unix_end, max_parse_seconds = parse_duration(
+                duration, max_duration_seconds, is_speed_auc
             )
             debug_log(
                 f"Parsed duration: normalized={normalized_duration}, unix_end={unix_end}"
             )
-            if unix_end - int(time.time()) > MAX_DURATION_SECONDS:
+            if unix_end - int(time.time()) > max_parse_seconds:
                 debug_log(f"Duration too long: {unix_end - int(time.time())} seconds")
-                await loader.error(content=f"Duration too long. Maximum is 5 hours.")
+                await loader.error(
+                    content=f"Duration too long. Maximum is {format_seconds(max_parse_seconds)}."
+                )
                 return
         except ValueError as e:
             debug_log(f"Duration parse error: {e}")
@@ -247,6 +262,17 @@ async def bulk_start_auction_func(
                     content=f"Autobuy amount must be at least {format_min_value}"
                 )
                 return
+        success, msg = check_if_right_channel_rarity(
+            interaction.channel,
+            rarity,
+            is_exclusive=any_exclusive,
+            is_bulk=True,
+            is_speed=is_speed_auc,
+        )
+        if msg:
+            debug_log(f"Channel rarity check failed: {msg}")
+            await loader.error(content=msg)
+            return
 
         gif_url = Images.bulk_auction
         if TESTING_DURATION:
@@ -265,6 +291,12 @@ async def bulk_start_auction_func(
                 bulk_rarity=rarity,
             )
             await loader.success(content="", embed=auction_embed, add_check_emoji=False)
+            if is_speed_auc:
+                speed_auc_role = interaction.guild.get_role(
+                    GRAND_LINE_AUCTION_ROLES.speed_auction
+                )
+                if speed_auc_role:
+                    content = f"{speed_auc_role.name} " + content
             auction_msg = await interaction.channel.send(content=content)
         except Exception as e:
             debug_log(f"Error generating or sending auction embed: {e}")

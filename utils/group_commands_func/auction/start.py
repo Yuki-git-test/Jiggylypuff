@@ -8,6 +8,7 @@ from constants.auction import MIN_AUCTION_VALUE
 from constants.grand_line_auction_constants import (
     GLA_SERVER_ID,
     GRAND_LINE_AUCTION_ROLES,
+    GRAND_LINE_AUCTION_TEXT_CHANNELS,
     KHY_CHANNEL_ID,
 )
 from constants.rarity import (
@@ -35,14 +36,15 @@ from utils.essentials.minimum_increment import (
     compute_minimum_increment,
     format_names_for_market_value_lookup,
 )
+from utils.functions.auction import check_if_right_channel_rarity, is_auction_channel
 from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
-from utils.parser.duration_parser import parse_duration
+from utils.parser.duration_parser import format_seconds, parse_duration
 from utils.parser.number_parser import parse_compact_number
 from utils.visuals.get_pokemon_gif import get_pokemon_gif
 from utils.visuals.pretty_defer import pretty_defer
 
-# enable_debug(f"{__name__}.make_auction_embed")
+#enable_debug(f"{__name__}.start_auction_func")
 
 # Max duration is 300 minutes (5 hours)
 TESTING = True
@@ -55,6 +57,18 @@ TEST_ENDS_ON = int(time.time()) + 180
 
 MAX_DURATION_SECONDS = 18_000
 TESTING_BROADCAST = False
+TESTING_SPEED_AUCTION = False
+
+
+def is_speed_auction(channel: discord.TextChannel) -> bool:
+    """Returns True if the auction in the given channel is a speed auction, otherwise False."""
+    if TESTING_SPEED_AUCTION:
+        return True
+
+    if channel.id == GRAND_LINE_AUCTION_TEXT_CHANNELS.speed_auction:
+        return True
+    else:
+        return False
 
 
 async def check_and_load_auction_and_market_cache(bot: commands.Bot):
@@ -270,13 +284,20 @@ async def start_auction_func(
                 content=f"You already have {ongoing_auctions_count} ongoing auction(s). The maximum allowed is {max_auctions_allowed}."
             )
             return
+        # Check if auction channel
+        passed, error_msg = is_auction_channel(interaction.channel, user)
+        if not passed:
+            await loader.error(content=error_msg)
+            return
 
+        # Check if right category for rarity
         if not is_mon_auctionable(pokemon):
             debug_log(f"{pokemon} is not auctionable.")
             await loader.error(
                 content=f"{pokemon} is not an auctionable Pokémon. Please choose a different one."
             )
             return
+        is_speed_auc = is_speed_auction(interaction.channel)
         rarity = get_rarity(pokemon)
         debug_log(f"Rarity: {rarity}")
         if not rarity:
@@ -316,15 +337,17 @@ async def start_auction_func(
         )
 
         try:
-            normalized_duration, unix_end = parse_duration(
-                duration, max_duration_seconds
+            normalized_duration, unix_end, max_parse_seconds = parse_duration(
+                duration, max_duration_seconds, is_speed_auc=is_speed_auc
             )
             debug_log(
                 f"Parsed duration: normalized={normalized_duration}, unix_end={unix_end}"
             )
-            if unix_end - int(time.time()) > MAX_DURATION_SECONDS:
+            if unix_end - int(time.time()) > max_parse_seconds:
                 debug_log(f"Duration too long: {unix_end - int(time.time())} seconds")
-                await loader.error(content=f"Duration too long. Maximum is 5 hours.")
+                await loader.error(
+                    content=f"Duration too long. Maximum is {format_seconds(max_parse_seconds)}."
+                )
                 return
         except ValueError as e:
             debug_log(f"Duration parse error: {e}")
@@ -363,6 +386,20 @@ async def start_auction_func(
             return
         if TESTING_DURATION:
             unix_end = TEST_ENDS_ON
+        rarity = get_rarity(pokemon)
+        debug_log(f"Rarity: {rarity}")
+        is_exclusive = is_mon_exclusive(pokemon)
+        success, msg = check_if_right_channel_rarity(
+            interaction.channel,
+            rarity,
+            is_exclusive=is_exclusive,
+            is_bulk=False,
+            is_speed=is_speed_auc,
+        )
+        if msg:
+            debug_log(f"Channel rarity check failed: {msg}")
+            await loader.error(content=msg)
+            return
         try:
             auction_embed, content = make_auction_embed(
                 bot=bot,
@@ -411,6 +448,13 @@ async def start_auction_func(
             return
 
         await loader.success(content="", embed=auction_embed, add_check_emoji=False)
+        if is_speed_auc:
+            speed_auc_role = interaction.guild.get_role(
+                GRAND_LINE_AUCTION_ROLES.speed_auction
+            )
+            if speed_auc_role:
+                content = f"{speed_auc_role.name} " + content
+
         auction_msg = await interaction.channel.send(content=content)
         pretty_log(
             "auction",

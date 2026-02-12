@@ -19,6 +19,7 @@ from utils.db.market_value_db import (
     fetch_lowest_market_value_cache,
     update_image_link,
     update_market_value_via_listener,
+    update_is_exclusive
 )
 from utils.essentials.minimum_increment import (
     compute_maximum_auction_duration_seconds,
@@ -115,11 +116,13 @@ async def price_data_listener(bot: discord.Client, message: discord.Message):
         is_exclusive = is_mon_exclusive(pokemon_name)
         if existing_exclusive_status != is_exclusive:
             new_exclusive = is_exclusive
+            await update_is_exclusive(bot, formatted_name, new_exclusive)
+
         else:
             new_exclusive = existing_exclusive_status
 
         if embed_image and existing_image_link != embed_image:
-            await update_image_link(bot, formatted_name, embed_image)
+            await update_image_link(bot, formatted_name, embed_image, new_exclusive)
 
         debug_log(
             f"Market value for {formatted_name} already exists in cache. Skipping update if value is not 0."

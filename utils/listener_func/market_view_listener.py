@@ -185,7 +185,8 @@ async def market_view_listener(bot: discord.Client, message: discord.Message):
             bot,
             parsed_pokemon_name_from_author,
             price_each,
-            str(date_listed, new_exclusive),
+            str(date_listed),
+            is_exclusive=new_exclusive,
         )
         debug_log("Called update_market_value.")
         await pink_check_react_if_khy(message)

@@ -20,6 +20,7 @@ from utils.db.market_value_db import (
     fetch_lowest_market_value_cache,
     fetch_pokemon_exclusivity_cache,
     update_image_link,
+    update_is_exclusive,
     update_market_value_via_listener,
     upsert_image_link,
 )
@@ -56,6 +57,7 @@ async def dex_listener(bot, message: discord.Message):
     is_exclusive = is_mon_exclusive(pokemon_name)
     if existing_exclusive_status != is_exclusive:
         new_exclusive = is_exclusive
+        await update_is_exclusive(bot, pokemon_name, new_exclusive)
     else:
         new_exclusive = existing_exclusive_status
     if embed_image_url and image_link_cache != embed_image_url:
