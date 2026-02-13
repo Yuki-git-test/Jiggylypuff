@@ -17,6 +17,7 @@ from utils.logs.pretty_log import pretty_log
 from utils.visuals.pretty_defer import pretty_defer
 
 
+# enable_debug(f"{__name__}.market_value_filter_func")
 # 🌸───────────────────────────────────────────────🌸
 # 🩷 ⏰ Paginator        🩷
 # 🌸───────────────────────────────────────────────🌸
@@ -26,10 +27,15 @@ class Paginator(View):
         self.pages = pages
         self.current_page = 0
 
-        # Remove buttons if only one page
+        # Remove buttons and images if only one page
         if len(pages) <= 1:
-            for item in self.children:
-                item.disabled = True
+            # Remove all navigation buttons
+            self.clear_items()
+            # Remove thumbnails and images from the single embed
+            if pages:
+                embed = pages[0]
+                embed.set_thumbnail(url=None)
+                embed.set_image(url=None)
 
     async def update_page(self, interaction):
         await interaction.response.edit_message(
@@ -76,6 +82,7 @@ async def market_value_filter_func(bot: commands.Bot, interaction: discord.Inter
         dex = get_dex_number_by_name(mon)
         dex_str = dex if dex is not None else "N/A"
         formatted_name = format_names_for_market_value_lookup(mon)
+        mon = mon.title()  # Capitalize for better display
         mon_str = f"{mon} #{dex_str}"
         if formatted_name in market_value_cache:
             filtered_mons.append(mon_str)

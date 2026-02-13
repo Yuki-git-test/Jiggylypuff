@@ -18,34 +18,41 @@ from utils.db.market_value_db import fetch_lowest_market_value_cache
 # enable_debug(f"{__name__}.compute_maximum_auction_duration_seconds")
 # enable_debug(f"{__name__}.compute_total_bulk_value")
 
+#enable_debug(f"{__name__}.format_names_for_market_value_lookup")
+
 
 def format_names_for_market_value_lookup(pokemon_name: str):
     """
     Format Pokémon name for market value lookup"""
-    debug_log(f"input: {pokemon_name!r}")
+    # Special log for names containing '-o'
+    if "-o" in pokemon_name:
+        debug_log(f"SPECIAL: '-o' detected in name: {pokemon_name!r}")
+    # Special log for 'type null'
+    if pokemon_name.lower().strip() == "type null":
+        debug_log(f"SPECIAL: 'type null' detected: {pokemon_name!r}")
     pokemon_name = pokemon_name.lower().strip()
     if pokemon_name.startswith("sgmax "):
         # shiny gigantamax-<name>
         base = pokemon_name[6:].strip()
         result = f"shiny gigantamax-{base}"
-        debug_log(f"sgmax result: {result}")
+        #debug_log(f"sgmax result: {result}")
         return result
     elif pokemon_name.startswith("gmax "):
         # gigantamax-<name>
         base = pokemon_name[5:].strip()
         result = f"gigantamax-{base}"
-        debug_log(f"gmax result: {result}")
+       # debug_log(f"gmax result: {result}")
         return result
     elif "smega" in pokemon_name:
         result = pokemon_name.replace("smega", "shiny mega").replace("-", " ")
-        debug_log(f"smega result: {result}")
+        #debug_log(f"smega result: {result}")
         return result
     elif "mega" in pokemon_name:
         result = pokemon_name.replace("-", " ")
-        debug_log(f"mega result: {result}")
+        #debug_log(f"mega result: {result}")
         return result
     else:
-        debug_log(f"default result: {pokemon_name}")
+        #debug_log(f"default result: {pokemon_name}")
         return pokemon_name
 
 
