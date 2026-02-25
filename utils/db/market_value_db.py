@@ -1,13 +1,74 @@
 # 🟣────────────────────────────────────────────
 #        Market Value DB Functions for Mew (bot.pg_pool)
 # 🟣────────────────────────────────────────────
-
 from datetime import datetime
 
 import discord
 
 from utils.cache.cache_list import market_value_cache
 from utils.logs.pretty_log import pretty_log
+
+
+async def update_rarity(bot, pokemon_name: str, rarity: str):
+    """
+    Update the rarity for a Pokémon in the market value table.
+    """
+    pokemon_name = pokemon_name.lower()
+    try:
+        async with bot.pg_pool.acquire() as conn:
+            # Only update if row exists
+            row = await conn.fetchrow(
+                "SELECT pokemon_name FROM market_value WHERE pokemon_name = $1",
+                pokemon_name,
+            )
+            if not row:
+                pretty_log(
+                    tag="db",
+                    message=f"No market value row found for {pokemon_name}, skipping rarity update.",
+                )
+                return
+            await conn.execute(
+                "UPDATE market_value SET rarity = $1, last_updated = $2 WHERE pokemon_name = $3",
+                rarity,
+                datetime.utcnow(),
+                pokemon_name,
+            )
+            # Update in cache as well
+            if pokemon_name in market_value_cache:
+                market_value_cache[pokemon_name]["rarity"] = rarity
+
+        pretty_log(
+            tag="db",
+            message=f"Updated rarity for {pokemon_name} to {rarity}",
+        )
+
+    except Exception as e:
+        pretty_log(
+            tag="error",
+            message=f"Failed to update rarity for {pokemon_name}: {e}",
+        )
+
+
+def fetch_rarity_cache(pokemon_name: str):
+    """
+    Get rarity for a Pokémon from cache.
+    Returns 'unknown' if not found or no data.
+    """
+    pokemon_data = market_value_cache.get(pokemon_name.lower())
+    if pokemon_data:
+        return pokemon_data.get("rarity", "unknown")
+    return "unknown"
+
+
+def fetch_dex_number_cache(pokemon_name: str):
+    """
+    Get dex number for a Pokémon from cache.
+    Returns 0 if not found or no data.
+    """
+    pokemon_data = market_value_cache.get(pokemon_name.lower())
+    if pokemon_data:
+        return pokemon_data.get("dex_number", 0)
+    return 0
 
 
 def fetch_market_value_cache(pokemon_name: str):
@@ -28,6 +89,7 @@ def fetch_lowest_market_value_cache(pokemon_name: str):
         return pokemon_data.get("lowest_market", 0)
     return 0
 
+
 def fetch_pokemon_exclusivity_cache(pokemon_name: str):
     """
     Get exclusivity status for a Pokémon from cache.
@@ -37,6 +99,7 @@ def fetch_pokemon_exclusivity_cache(pokemon_name: str):
     if pokemon_data:
         return pokemon_data.get("is_exclusive", False)
     return False
+
 
 def is_pokemon_exclusive_cache(pokemon_name: str):
     """
@@ -60,6 +123,46 @@ def fetch_image_link_cache(pokemon_name: str):
     return None
 
 
+async def fetch_image_link_from_db(bot, pokemon_name: str):
+    """
+    Get image link for a Pokémon from database.
+    Returns None if not found or no data.
+    """
+    try:
+        async with bot.pg_pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT image_link FROM market_value WHERE pokemon_name = $1",
+                pokemon_name.lower(),
+            )
+            return row["image_link"] if row and row["image_link"] else None
+    except Exception as e:
+        pretty_log(
+            tag="error",
+            message=f"Failed to fetch image link for {pokemon_name} from database: {e}",
+        )
+        return None
+
+
+async def fetch_dex_number_from_db(bot, pokemon_name: str):
+    """
+    Get dex number for a Pokémon from database.
+    Returns 0 if not found or no data.
+    """
+    try:
+        async with bot.pg_pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT dex_number FROM market_value WHERE pokemon_name = $1",
+                pokemon_name.lower(),
+            )
+            return row["dex_number"] if row and row["dex_number"] else 0
+    except Exception as e:
+        pretty_log(
+            tag="error",
+            message=f"Failed to fetch dex number for {pokemon_name} from database: {e}",
+        )
+        return 0
+
+
 # --------------------
 #  Upsert market value data
 # --------------------
@@ -72,6 +175,8 @@ async def set_market_value(
     current_listing: int = 0,
     true_lowest: int = 0,
     listing_seen: str | None = None,
+    image_link: str = None,
+    rarity: str = "unknown",
 ):
     """
     Insert or update market value data for a Pokémon.
@@ -82,9 +187,9 @@ async def set_market_value(
                 """
                 INSERT INTO market_value (
                     pokemon_name, dex_number, is_exclusive, lowest_market,
-                    current_listing, true_lowest, listing_seen, last_updated
+                    current_listing, true_lowest, listing_seen, image_link, last_updated, rarity
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                 ON CONFLICT (pokemon_name) DO UPDATE SET
                     dex_number = $2,
                     is_exclusive = $3,
@@ -92,7 +197,9 @@ async def set_market_value(
                     current_listing = $5,
                     true_lowest = LEAST($6, market_value.true_lowest),
                     listing_seen = COALESCE($7, market_value.listing_seen),
-                    last_updated = $8
+                    image_link = COALESCE($8, market_value.image_link),
+                    last_updated = $9,
+                    rarity = COALESCE($10, market_value.rarity)
                 """,
                 pokemon_name.lower(),
                 dex_number,
@@ -101,20 +208,20 @@ async def set_market_value(
                 current_listing,
                 true_lowest,
                 listing_seen,
+                image_link,
                 datetime.utcnow(),
+                rarity,
             )
 
         pretty_log(
             tag="db",
             message=f"Updated market value for {pokemon_name}: true_lowest={true_lowest:,}",
-            bot=bot,
         )
 
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to set market value for {pokemon_name}: {e}",
-            bot=bot,
         )
 
 
@@ -245,7 +352,6 @@ async def update_market_value_via_listener(
                     message=f"Updated market value for {pokemon_name} via listener: lowest_market={lowest_market:,}, listing_seen={listing_seen}, current_listing={current_listing:,}"
                     + (f", image_link updated" if image_link is not None else "")
                     + (f", is_exclusive updated" if is_exclusive is not None else ""),
-                    bot=bot,
                 )
             else:
                 market_value_cache[pokemon_name] = {
@@ -261,20 +367,57 @@ async def update_market_value_via_listener(
                     message=f"Added new market value for {pokemon_name} via listener: lowest_market={lowest_market:,}, listing_seen={listing_seen}, current_listing={current_listing:,}"
                     + (f", image_link set" if image_link is not None else "")
                     + (f", is_exclusive set" if is_exclusive is not None else ""),
-                    bot=bot,
                 )
         pretty_log(
             tag="db",
             message=f"Updated market value for {pokemon_name} via listener: lowest_market={lowest_market:,}, listing_seen={listing_seen}, current_listing={current_listing:,}"
             + (f", image_link updated" if image_link is not None else "")
             + (f", is_exclusive updated" if is_exclusive is not None else ""),
-            bot=bot,
         )
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to update market value for {pokemon_name} via listener: {e}",
-            bot=bot,
+        )
+
+
+async def update_dex_number(bot, pokemon_name: str, dex_number: int):
+    """
+    Update the dex number for a Pokémon in the market value table.
+    """
+    pokemon_name = pokemon_name.lower()
+    try:
+        async with bot.pg_pool.acquire() as conn:
+            # Only update if row exists
+            row = await conn.fetchrow(
+                "SELECT pokemon_name FROM market_value WHERE pokemon_name = $1",
+                pokemon_name,
+            )
+            if not row:
+                pretty_log(
+                    tag="db",
+                    message=f"No market value row found for {pokemon_name}, skipping dex number update.",
+                )
+                return
+            await conn.execute(
+                "UPDATE market_value SET dex_number = $1, last_updated = $2 WHERE pokemon_name = $3",
+                dex_number,
+                datetime.utcnow(),
+                pokemon_name,
+            )
+            # Update in cache as well
+            if pokemon_name in market_value_cache:
+                market_value_cache[pokemon_name]["dex_number"] = dex_number
+
+        pretty_log(
+            tag="db",
+            message=f"Updated dex number for {pokemon_name} to {dex_number}",
+        )
+
+    except Exception as e:
+        pretty_log(
+            tag="error",
+            message=f"Failed to update dex number for {pokemon_name}: {e}",
         )
 
 
@@ -335,14 +478,12 @@ async def upsert_image_link(
                 if is_exclusive is not None
                 else ""
             ),
-            bot=bot,
         )
 
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to upsert image link for {pokemon_name}: {e}",
-            bot=bot,
         )
 
 
@@ -364,7 +505,6 @@ async def update_image_link(
                 pretty_log(
                     tag="db",
                     message=f"No market value row found for {pokemon_name}, skipping image link update.",
-                    bot=bot,
                 )
                 return
             if is_exclusive is not None:
@@ -396,14 +536,12 @@ async def update_image_link(
                 if is_exclusive is not None
                 else ""
             ),
-            bot=bot,
         )
 
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to update image link for {pokemon_name}: {e}",
-            bot=bot,
         )
 
 
@@ -464,14 +602,12 @@ async def update_market_value(
         pretty_log(
             tag="db",
             message=f"Upserted market value for {pokemon_name}: lowest_market={lowest_market:,}, listing_seen={listing_seen}",
-            bot=bot,
         )
 
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to upsert market value for {pokemon_name}: {e}",
-            bot=bot,
         )
 
 
@@ -493,7 +629,6 @@ async def update_is_exclusive(
                 pretty_log(
                     tag="db",
                     message=f"No market value row found for {pokemon_name}, skipping update.",
-                    bot=bot,
                 )
                 return
             # Build update query
@@ -517,14 +652,12 @@ async def update_is_exclusive(
             tag="db",
             message=f"Updated is_exclusive for {pokemon_name} to {is_exclusive}"
             + (f", image_link updated" if image_link is not None else ""),
-            bot=bot,
         )
 
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to update is_exclusive for {pokemon_name}: {e}",
-            bot=bot,
         )
 
 
@@ -546,7 +679,6 @@ async def fetch_market_value(bot, pokemon_name: str) -> dict | None:
         pretty_log(
             tag="error",
             message=f"Failed to fetch market value for {pokemon_name}: {e}",
-            bot=bot,
         )
         return None
 
@@ -568,7 +700,6 @@ async def fetch_all_market_values(bot) -> list[dict]:
         pretty_log(
             tag="error",
             message=f"Failed to fetch market values: {e}",
-            bot=bot,
         )
         return []
 
@@ -591,7 +722,6 @@ async def fetch_high_value_pokemon(bot, min_price: int = 100000) -> list[dict]:
         pretty_log(
             tag="error",
             message=f"Failed to fetch high value pokemon: {e}",
-            bot=bot,
         )
         return []
 
@@ -614,14 +744,12 @@ async def cleanup_old_market_data(bot, days_old: int = 30) -> bool:
         pretty_log(
             tag="db",
             message=f"Cleaned up {deleted_count} old market value records",
-            bot=bot,
         )
         return True
     except Exception as e:
         pretty_log(
             tag="error",
             message=f"Failed to cleanup old market data: {e}",
-            bot=bot,
         )
         return False
 
@@ -641,9 +769,9 @@ async def sync_market_cache_to_db(bot, market_cache: dict):
                     """
                     INSERT INTO market_value (
                         pokemon_name, dex_number, is_exclusive, lowest_market,
-                        current_listing, true_lowest, listing_seen, last_updated
+                        current_listing, true_lowest, listing_seen, last_updated, rarity, image_link
                     )
-                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                     ON CONFLICT (pokemon_name) DO UPDATE SET
                         dex_number = $2,
                         is_exclusive = $3,
@@ -651,23 +779,26 @@ async def sync_market_cache_to_db(bot, market_cache: dict):
                         current_listing = $5,
                         true_lowest = LEAST($6, market_value.true_lowest),
                         listing_seen = COALESCE($7, market_value.listing_seen),
-                        last_updated = $8
+                        last_updated = $8,
+                        rarity = COALESCE($9, market_value.rarity),
+                        image_link = COALESCE($10, market_value.image_link)
                     """,
                     pokemon_name.lower(),
-                    data.get("dex", 0),
+                    data.get("dex_number", 0),
                     data.get("is_exclusive", False),
                     data.get("lowest_market", 0),
                     data.get("current_listing", 0),
                     data.get("true_lowest", 0),
                     data.get("listing_seen", "Unknown"),
                     datetime.utcnow(),
+                    data.get("rarity", "unknown"),
+                    data.get("image_link", None),
                 )
                 update_count += 1
 
         pretty_log(
             tag="db",
             message=f"Synced {update_count} market value entries to database",
-            bot=bot,
         )
         return True
 
@@ -675,7 +806,6 @@ async def sync_market_cache_to_db(bot, market_cache: dict):
         pretty_log(
             tag="error",
             message=f"Failed to sync market cache to database: {e}",
-            bot=bot,
         )
         return False
 
@@ -690,7 +820,6 @@ async def check_and_load_market_cache(bot) -> dict:
             pretty_log(
                 tag="error",
                 message="Market value cache is empty after loading from database.",
-                bot=bot,
             )
     return market_value_cache
 
@@ -710,20 +839,21 @@ async def load_market_cache_from_db(bot) -> dict:
             for row in rows:
                 cache[row["pokemon_name"]] = {
                     "pokemon": row["pokemon_name"],
-                    "dex": row["dex_number"],
+                    "dex_number": row["dex_number"],
                     "is_exclusive": row.get("is_exclusive", False),
                     "lowest_market": row["lowest_market"],
                     "current_listing": row["current_listing"],
                     "true_lowest": row["true_lowest"],
                     "listing_seen": row["listing_seen"],
                     "image_link": row.get("image_link", None),
+                    "rarity": row.get("rarity", "unknown"),
                 }
 
         """pretty_log(
             tag="",
             message=f"Loaded {len(cache)} market value entries from database",
             label="💎 Market Value Cache",
-            bot=bot,
+
         )"""
         return market_value_cache.update(cache)  # Update the global cache
 
@@ -731,6 +861,5 @@ async def load_market_cache_from_db(bot) -> dict:
         pretty_log(
             tag="error",
             message=f"Failed to load market cache from database: {e}",
-            bot=bot,
         )
         return {}

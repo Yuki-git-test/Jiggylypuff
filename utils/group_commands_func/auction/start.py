@@ -47,7 +47,7 @@ from utils.visuals.pretty_defer import pretty_defer
 #enable_debug(f"{__name__}.start_auction_func")
 
 # Max duration is 300 minutes (5 hours)
-TESTING = True
+TESTING = False
 
 
 TESTING_DURATION = False
@@ -248,7 +248,7 @@ async def start_auction_func(
     accepted_pokemon: str = None,
 ):
     loader = await pretty_defer(
-        interaction=interaction, content="Generating embed...", ephemeral=False
+        interaction=interaction, content="Starting auction...", ephemeral=False
     )
 
     from utils.cache.auction_cache import (

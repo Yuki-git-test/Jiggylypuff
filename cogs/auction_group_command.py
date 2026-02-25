@@ -13,7 +13,7 @@ from utils.group_commands_func.auction import *
 from utils.logs.pretty_log import pretty_log
 from utils.parser.number_parser import parse_compact_number
 
-GROUP_NAME = "test-auction"  # change to "auction" when done testing
+GROUP_NAME = "auction"  # change to "auction" when done testing
 # 🎀────────────────────────────────────────────
 #           🌸 Auction Cog Setup 🌸
 # ─────────────────────────────────────────────

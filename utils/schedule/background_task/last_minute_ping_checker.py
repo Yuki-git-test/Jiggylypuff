@@ -13,7 +13,7 @@ from utils.db.auction_db import (
 )
 from utils.logs.pretty_log import pretty_log
 
-TESTING = True
+TESTING = False
 
 
 async def check_and_ping_last_minute_auctions(bot: discord.Client):
@@ -31,7 +31,7 @@ async def check_and_ping_last_minute_auctions(bot: discord.Client):
         channel_id = auction["channel_id"]
         if channel_id in processing_auction_end:
             continue  # Skip if auction is currently being processed for ending
-        
+
         if channel_id == GRAND_LINE_AUCTION_TEXT_CHANNELS.speed_auction:
             # Update database to indicate ping has been sent without actually sending a message since speed auction channel is already very active and doesn't need ping
             await update_last_minute_pinged(bot, channel_id, True)

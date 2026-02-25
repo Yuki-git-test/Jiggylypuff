@@ -48,7 +48,7 @@ RARITY_MAP = {
         "emoji": GRAND_LINE_AUCTION_EMOJIS.rare,
         "auction role": [],
     },
-    "super rare": {
+    "superrare": {
         "color": Rarity_Colors.super_rare,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.superrare,
         "auction role": [],
@@ -67,7 +67,7 @@ RARITY_MAP = {
         "increment value": 50_000,
         "category": [GRAND_LINE_AUCTION_CATEGORIES.MEGA_AUCTION],
     },
-    "gmax": {
+    "gigantamax": {
         "color": Rarity_Colors.gmax,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.gigantamax,
         "auction role": [GRAND_LINE_AUCTION_ROLES.gmax_auction],
@@ -81,7 +81,7 @@ RARITY_MAP = {
         "increment value": 50_000,
         "category": [GRAND_LINE_AUCTION_CATEGORIES.SHINY_AUCTION],
     },
-    "sgmax": {
+    "shiny gigantamax": {
         "color": Rarity_Colors.sgmax,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.shinygigantamax,
         "auction role": [
@@ -94,7 +94,7 @@ RARITY_MAP = {
             GRAND_LINE_AUCTION_CATEGORIES.GIGANTAMAX_AUCTION,
         ],
     },
-    "smega": {
+    "shiny mega": {
         "color": Rarity_Colors.smega,
         "emoji": GRAND_LINE_AUCTION_EMOJIS.shinymega,
         "auction role": [
@@ -113,6 +113,19 @@ RARITY_MAP = {
         "auction role": [GRAND_LINE_AUCTION_ROLES.golden_auction],
         "increment value": 100_000,
         "category": [GRAND_LINE_AUCTION_CATEGORIES.GOLDEN_AUCTION],
+    },
+    "golden mega": {
+        "color": Rarity_Colors.golden,
+        "emoji": GRAND_LINE_AUCTION_EMOJIS.golden_form,
+        "auction role": [
+            GRAND_LINE_AUCTION_ROLES.golden_auction,
+            GRAND_LINE_AUCTION_ROLES.mega_auction,
+        ],
+        "increment value": 100_000,
+        "category": [
+            GRAND_LINE_AUCTION_CATEGORIES.GOLDEN_AUCTION,
+            GRAND_LINE_AUCTION_CATEGORIES.MEGA_AUCTION,
+        ],
     },
     "exclusive": {
         "color": Rarity_Colors.exclusive,
@@ -135,13 +148,13 @@ def get_rarity(pokemon: str):
     if "golden" in name:
         return "golden"
     elif "shiny" in name and "gigantamax" in name:
-        return "sgmax"
+        return "shiny gigantamax"
     elif "shiny" in name and "mega" in name:
-        return "smega"
+        return "shiny mega"
     elif "shiny" in name:
         return "shiny"
     elif "gigantamax" in name:
-        return "gmax"
+        return "gigantamax"
     elif "mega" in name and not "yanmega" in name and not "meganium" in name:
         return "mega"
 
@@ -149,7 +162,7 @@ def get_rarity(pokemon: str):
     elif name in (mon.lower() for mon in legendary_mons):
         return "legendary"
     elif name in (mon.lower() for mon in superrare_mons):
-        return "super rare"
+        return "superrare"
     elif name in (mon.lower() for mon in rare_mons):
         return "rare"
     elif name in (mon.lower() for mon in uncommon_mons):

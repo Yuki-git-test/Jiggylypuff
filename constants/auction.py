@@ -4,13 +4,15 @@ from .grand_line_auction_constants import (
 )
 
 MIN_INITIAL_BID = 100_000
-MIN_AUCTION_VALUE = 400_000
+MIN_AUCTION_VALUE = 250_000
 
 # 10 mins minimum time for a speed auction
 MIN_SPEED_AUCTION_SECONDS = 600
-MAX_SPEED_AUCTION_SECONDS = 3600
+# 30 mins max time for a speed auction since those are meant to be quick and fast paced
+MAX_SPEED_AUCTION_SECONDS = 1800
 
-MIN_REGULAR_AUCTION_SECONDS = 3600  # 1hr
+# 30 mins minimum time for a regular auction, 5 hours max
+MIN_REGULAR_AUCTION_SECONDS = 1800 # 30 mins
 MAX_REGULAR_AUCTION_SECONDS = 18000  # 5hrs
 
 AUCTION_CATEGORY_LIST = [

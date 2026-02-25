@@ -37,7 +37,7 @@ def get_pokemon_gif(input_name: str):
     original_input = input_name
     shiny = False
     golden = False
-    form: Literal["regular", "mega", "gmax"] = "regular"
+    form: Literal["regular", "mega", "gigantamax"] = "regular"
     region_suffix = ""
     debug_log(f"Input Pokémon name: {input_name}")
     # Normalize input
@@ -214,4 +214,5 @@ def get_pokemon_gif(input_name: str):
         tag="debug" if gif_url else "error",
         message=(f"Fetched GIF URL for '{gif_name}': {gif_url}" if gif_url else error),
     )
+    return gif_url
     return gif_url

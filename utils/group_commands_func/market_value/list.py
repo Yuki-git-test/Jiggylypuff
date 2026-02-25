@@ -93,9 +93,9 @@ async def market_value_filter_func(bot: commands.Bot, interaction: discord.Inter
                 "golden",
                 "shiny",
                 "mega",
-                "gmax",
-                "smega",
-                "sgmax",
+                "gigantamax",
+                "shiny mega",
+                "shiny gigantamax",
             ]:
                 priority_no_value_mons.append(mon_str)
             else:

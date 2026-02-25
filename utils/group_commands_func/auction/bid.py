@@ -18,7 +18,7 @@ from .start import is_being_processed, make_auction_embed
 
 INITIAL_MIN_BID = 100_000
 
-TESTING = True  # Set to False when not testing
+TESTING = False  # Set to False when not testing
 
 
 async def bid_func(
