@@ -2,9 +2,9 @@ import discord
 
 from utils.db.auction_db import update_broadcast_msg_id
 from utils.logs.pretty_log import pretty_log
-
+from constants.grand_line_auction_constants import GRAND_LINE_AUCTION_TEXT_CHANNELS
 TEST_BROADCAST_CHANNEL_ID = 1469896953709068550
-BROADCAST_CHANNEL_ID = TEST_BROADCAST_CHANNEL_ID
+BROADCAST_CHANNEL_ID = GRAND_LINE_AUCTION_TEXT_CHANNELS.auction_broadcast
 
 
 async def broadcast_auction(

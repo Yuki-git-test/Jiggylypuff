@@ -10,6 +10,7 @@ MH_APP_ID = 833428629705719828
 #       GRAND_LINE_AUCTION_TEXT_CHANNELS
 # 💦☁────────────────────────────────────────────💦☁
 class GRAND_LINE_AUCTION_TEXT_CHANNELS:
+    auction_broadcast = 1351928008935473193
 
     # 🌊💙🤍───────────── Gambles ─────────────💙🤍🌊
 
