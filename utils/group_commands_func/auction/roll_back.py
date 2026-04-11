@@ -13,7 +13,7 @@ from constants.grand_line_auction_constants import (
 from constants.rarity import RARITY_MAP, get_rarity, is_mon_auctionable
 from utils.autocomplete.pokemon_autocomplete import (
     format_price_w_coin,
-    pokemon_autocomplete,
+
 )
 from utils.cache.auction_cache import get_auction_cache
 from utils.cache.cache_list import (

@@ -1,12 +1,155 @@
 # 🟣────────────────────────────────────────────
 #        Market Value DB Functions for Mew (bot.pg_pool)
 # 🟣────────────────────────────────────────────
+import re
 from datetime import datetime
 
 import discord
+from discord import app_commands
 
-from utils.cache.cache_list import market_value_cache
+from utils.cache.cache_list import market_value_cache, pokemon_list_cache
+from utils.logs.debug_log import debug_log, enable_debug
 from utils.logs.pretty_log import pretty_log
+
+
+# (raw_name, normalized_name, display_name, dex_number)
+POKEMON_AUTOCOMPLETE_INDEX: list[tuple[str, str, str, int]] = []
+
+
+def normalize_pokemon_search_text(value: str) -> str:
+    return re.sub(r"[^\w\s]", "", value.lower()).replace(" ", "")
+
+
+def rebuild_pokemon_autocomplete_index() -> None:
+    POKEMON_AUTOCOMPLETE_INDEX.clear()
+    POKEMON_AUTOCOMPLETE_INDEX.extend(
+        (
+            name,
+            normalize_pokemon_search_text(name),
+            format_display_name_for_autocomplete(name),
+            dex,
+        )
+        for name, dex in pokemon_list_cache.items()
+    )
+    debug_log(
+        f"Built POKEMON_AUTOCOMPLETE_INDEX with {len(POKEMON_AUTOCOMPLETE_INDEX)} entries"
+    )
+
+
+def format_display_name_for_autocomplete(raw_name: str) -> str:
+    SPECIAL_CASES = {
+        "jangmo-o": "Jangmo-o",
+        "hakamo-o": "Hakamo-o",
+        "kommo-o": "Kommo-o",
+        "tapu-koko": "Tapu-Koko",
+        "tapu-lele": "Tapu-Lele",
+        "tapu-bulu": "Tapu-Bulu",
+        "tapu-fini": "Tapu-Fini",
+    }
+
+    clean_name = raw_name.lower()
+
+    if "mega-" in clean_name:
+        clean_name = clean_name.replace("mega-", "mega ")
+
+    if clean_name in SPECIAL_CASES:
+        return SPECIAL_CASES[clean_name]
+
+    def smart_capitalize(name: str) -> str:
+        return " ".join(
+            "-".join(sub.capitalize() for sub in part.split("-"))
+            for part in name.split()
+        )
+
+    return smart_capitalize(clean_name)
+
+
+# ==================== 🌟 Autocomplete Functions ==================== #
+async def pokemon_autocomplete(
+    interaction: discord.Interaction, current: str
+) -> list[app_commands.Choice[str]]:
+    """
+    Autocomplete Pokémon names with #Dex display.
+    Matches both names and dex numbers.
+    Uses a precomputed autocomplete index from pokemon_list_cache.
+    """
+    debug_log(f"Autocomplete input: '{current}'")
+
+    # Recover gracefully if autocomplete gets called before cache load.
+    if not POKEMON_AUTOCOMPLETE_INDEX and pokemon_list_cache:
+        rebuild_pokemon_autocomplete_index()
+
+    current_simple = normalize_pokemon_search_text(current or "")
+    debug_log(f"Normalized input: '{current_simple}'")
+
+    results_with_name: list[tuple[str, app_commands.Choice[str]]] = []
+    seen = set()
+
+    # Check if input looks numeric (dex search)
+    dex_query = None
+    if current_simple.isdigit():
+        try:
+            dex_query = int(current_simple)
+            debug_log(f"Parsed dex_query: {dex_query}")
+        except ValueError:
+            debug_log("Failed to parse dex_query")
+            dex_query = None
+
+    for name, norm, display_name, dex in POKEMON_AUTOCOMPLETE_INDEX:
+        if len(results_with_name) >= 25:
+            break
+
+        # Match by name
+        if not current_simple or current_simple in norm:
+            display = f"{display_name} #{dex}"
+            if display not in seen:
+                results_with_name.append(
+                    (display_name, app_commands.Choice(name=display, value=name))
+                )
+                seen.add(display)
+
+        # Match by dex number
+        if dex_query is not None and dex_query == dex:
+            display = f"{display_name} #{dex}"
+            if display not in seen:
+                results_with_name.append(
+                    (display_name, app_commands.Choice(name=display, value=name))
+                )
+                seen.add(display)
+
+    if not results_with_name:
+        debug_log("No matches found")
+        results_with_name.append(
+            ("", app_commands.Choice(name="No matches found", value=current or ""))
+        )
+
+    debug_log(f"Returning {len(results_with_name)} results")
+    # Sort alphabetically by display name
+    results_with_name.sort(key=lambda x: x[0])
+    return [choice for _, choice in results_with_name]
+
+
+# 🍩────────────────────────────────────────────
+#        💤 Pokemon List Names
+# 🍩────────────────────────────────────────────
+def build_pokemon_list_from_cache():
+    """
+    Build a dictionary mapping Pokémon names to their dex numbers
+    using the global pokemon_cache.
+    """
+    if not market_value_cache:
+        pretty_log("cache", "⚠️ Pokémon cache is empty, cannot build list.")
+        return {}
+
+    pokemon_list_cache.clear()
+    pokemon_list_cache.update(
+        {entry["pokemon"]: entry["dex_number"] for entry in market_value_cache.values()}
+    )
+    rebuild_pokemon_autocomplete_index()
+    pretty_log(
+        "cache", f"✅ Built Pokémon list with {len(pokemon_list_cache)} entries."
+    )
+    return pokemon_list_cache
 
 
 async def update_rarity(bot, pokemon_name: str, rarity: str):
@@ -855,7 +998,9 @@ async def load_market_cache_from_db(bot) -> dict:
             label="💎 Market Value Cache",
 
         )"""
-        return market_value_cache.update(cache)  # Update the global cache
+        market_value_cache.update(cache)  # Update the global cache
+        build_pokemon_list_from_cache()  # Build the pokemon list cache based on market value cache
+        return market_value_cache, pokemon_list_cache
 
     except Exception as e:
         pretty_log(

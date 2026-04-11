@@ -46,3 +46,11 @@ webhook_url_cache: dict[tuple[int, int], dict[str, str]] = {}
 #     "channel_name": "alerts-channel",
 # },
 #
+# 🍩────────────────────────────────────────────
+#        💤 Pokemon List Cache
+# 🍩────────────────────────────────────────────
+pokemon_list_cache: dict[str, int] = {}
+# Structure:
+# pokemon_list_cache = {
+#     "pokemon_name": "dex_number",
+#     }

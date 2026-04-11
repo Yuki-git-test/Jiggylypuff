@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from utils.autocomplete.pokemon_autocomplete import pokemon_autocomplete
+from utils.db.market_value_db import pokemon_autocomplete
 from utils.essentials.command_safe import run_command_safe
 from utils.essentials.role_checks import auctioneer_only
 from utils.group_commands_func.bulk import *
