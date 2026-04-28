@@ -49,8 +49,18 @@ async def check_and_ping_last_minute_auctions(bot: discord.Client):
             continue
         # Send last minute ping
         last_minute_ping_role = guild.get_role(GRAND_LINE_AUCTION_ROLES.last_min)
-        # CHange to mention when done testing
-        content = f"{last_minute_ping_role.name} Auction for {auction['pokemon']} is ending in less than 10 minutes!"
+        if not last_minute_ping_role:
+            pretty_log(
+                tag="error",
+                message=f"Last-minute ping role not found in guild ID {guild.id}",
+                bot=bot,
+            )
+            continue
+
+        content = (
+            f"{last_minute_ping_role.mention} Auction for {auction['pokemon']} "
+            "is ending in less than 10 minutes!"
+        )
         try:
             await update_last_minute_pinged(
                 bot, channel_id, True
